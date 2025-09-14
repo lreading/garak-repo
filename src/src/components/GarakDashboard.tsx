@@ -1,0 +1,464 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { GarakReportData, TestCategory, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis } from '@/lib/garak-parser';
+import { CategoryCard } from '@/components/CategoryCard';
+
+interface GarakDashboardProps {
+  reportData: GarakReportData;
+}
+
+export function GarakDashboard({ reportData }: GarakDashboardProps) {
+  const [selectedCategory, setSelectedCategory] = useState<TestCategory | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [vulnerabilityFilter, setVulnerabilityFilter] = useState<'all' | 'vulnerable' | 'safe'>('all');
+
+  const filteredCategories = reportData.categories.filter(category =>
+    category.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalVulnerabilities = reportData.categories.reduce((sum, cat) => 
+    sum + cat.attempts.filter(attempt => 
+      Object.values(attempt.detector_results).some(scores => 
+        scores.some(score => score > 0.5)
+      )
+    ).length, 0
+  );
+
+  const overallVulnerabilityRate = reportData.categories.length > 0 
+    ? reportData.categories.reduce((sum, cat) => {
+        const vulnerableAttempts = cat.attempts.filter(attempt => 
+          Object.values(attempt.detector_results).some(scores => 
+            scores.some(score => score > 0.5)
+          )
+        );
+        return sum + (vulnerableAttempts.length / cat.totalAttempts) * 100;
+      }, 0) / reportData.categories.length
+    : 0;
+
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Garak Report Visualizer</h1>
+              <p className="mt-2 text-gray-600">
+                Run ID: {reportData.runId} | Version: {reportData.garakVersion}
+              </p>
+              <p className="text-sm text-gray-500">
+                Started: {new Date(reportData.startTime).toLocaleString()}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{reportData.totalAttempts}</div>
+              <div className="text-sm text-gray-600">Total Tests</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-gray-900">{reportData.categories.length}</div>
+                <div className="text-sm text-gray-600">Test Categories</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-gray-900">{totalVulnerabilities}</div>
+                <div className="text-sm text-gray-600">Vulnerabilities Found</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-gray-900">{overallVulnerabilityRate.toFixed(1)}%</div>
+                <div className="text-sm text-gray-600">Overall % Vulnerable</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-gray-900">
+                  {reportData.categories.reduce((sum, cat) => sum + cat.attempts.length, 0)}
+                </div>
+                <div className="text-sm text-gray-600">Total Attempts</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Search */}
+        <div className="mb-6">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search test categories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Categories Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCategories.map((category) => (
+            <CategoryCard
+              key={category.name}
+              category={category}
+              onClick={() => setSelectedCategory(category)}
+            />
+          ))}
+        </div>
+
+        {filteredCategories.length === 0 && (
+          <div className="text-center py-12">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.709M15 6.291A7.962 7.962 0 0012 5c-2.34 0-4.29 1.009-5.824 2.709" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No categories found</h3>
+            <p className="mt-1 text-sm text-gray-500">Try adjusting your search terms.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Category Detail Modal */}
+      {selectedCategory && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {selectedCategory.displayName}
+                </h3>
+                <button
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setVulnerabilityFilter('all');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-900">{selectedCategory.totalAttempts}</div>
+                  <div className="text-sm text-gray-600">Total Attempts</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-900">{selectedCategory.averageScore.toFixed(3)}</div>
+                  <div className="text-sm text-gray-600">Average Score</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-900">{selectedCategory.maxScore.toFixed(3)}</div>
+                  <div className="text-sm text-gray-600">Max Score</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {(() => {
+                      const vulnerableAttempts = selectedCategory.attempts.filter(attempt => 
+                        Object.values(attempt.detector_results).some(scores => 
+                          scores.some(score => score > 0.5)
+                        )
+                      );
+                      return ((vulnerableAttempts.length / selectedCategory.totalAttempts) * 100).toFixed(1);
+                    })()}%
+                  </div>
+                  <div className="text-sm text-gray-600">% Vulnerable</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-900">
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${getDefconColor(selectedCategory.defconGrade)}`}>
+                      {getDefconLabel(selectedCategory.defconGrade)}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">Z-Score: {selectedCategory.zScore.toFixed(2)}</div>
+                </div>
+              </div>
+
+              {/* Vulnerability Filter */}
+              <div className="mb-6">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm font-medium text-gray-700">Filter by vulnerability:</span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setVulnerabilityFilter('all')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        vulnerabilityFilter === 'all'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      All ({selectedCategory.totalAttempts})
+                    </button>
+                    <button
+                      onClick={() => setVulnerabilityFilter('vulnerable')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        vulnerabilityFilter === 'vulnerable'
+                          ? 'bg-red-100 text-red-800 border border-red-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Vulnerable ({selectedCategory.attempts.filter(attempt => 
+                        Object.values(attempt.detector_results).some(scores => 
+                          scores.some(score => score > 0.5)
+                        )
+                      ).length})
+                    </button>
+                    <button
+                      onClick={() => setVulnerabilityFilter('safe')}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        vulnerabilityFilter === 'safe'
+                          ? 'bg-green-100 text-green-800 border border-green-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Safe ({selectedCategory.attempts.filter(attempt => 
+                        !Object.values(attempt.detector_results).some(scores => 
+                          scores.some(score => score > 0.5)
+                        )
+                      ).length})
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filtered Results Summary */}
+              {(() => {
+                const filteredAttempts = selectedCategory.attempts.filter(attempt => {
+                  if (vulnerabilityFilter === 'all') return true;
+                  if (vulnerabilityFilter === 'vulnerable') {
+                    return Object.values(attempt.detector_results).some(scores => 
+                      scores.some(score => score > 0.5)
+                    );
+                  }
+                  if (vulnerabilityFilter === 'safe') {
+                    return !Object.values(attempt.detector_results).some(scores => 
+                      scores.some(score => score > 0.5)
+                    );
+                  }
+                  return true;
+                });
+                
+                const vulnerableAttempts = filteredAttempts.filter(attempt => 
+                  Object.values(attempt.detector_results).some(scores => 
+                    scores.some(score => score > 0.5)
+                  )
+                );
+                
+                return (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium text-blue-900">
+                          Showing {filteredAttempts.length} of {selectedCategory.totalAttempts} attempts
+                        </span>
+                        {vulnerabilityFilter !== 'all' && (
+                          <span className="text-sm text-blue-700 ml-2">
+                            (filtered by {vulnerabilityFilter})
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-blue-700">
+                        {vulnerableAttempts.length} vulnerable attempts in this view
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {selectedCategory.attempts
+                  .filter(attempt => {
+                    if (vulnerabilityFilter === 'all') return true;
+                    if (vulnerabilityFilter === 'vulnerable') {
+                      return Object.values(attempt.detector_results).some(scores => 
+                        scores.some(score => score > 0.5)
+                      );
+                    }
+                    if (vulnerabilityFilter === 'safe') {
+                      return !Object.values(attempt.detector_results).some(scores => 
+                        scores.some(score => score > 0.5)
+                      );
+                    }
+                    return true;
+                  })
+                  .map((attempt, index) => (
+                  <div key={attempt.uuid} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <h4 className="font-medium text-gray-900">Attempt #{attempt.seq}</h4>
+                        <span className="text-xs text-gray-500">UUID: {attempt.uuid}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          attempt.status === 2 
+                            ? 'bg-green-100 text-green-800' 
+                            : attempt.status === 1
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {attempt.status === 2 ? 'Evaluated' : attempt.status === 1 ? 'Responded' : 'Not Sent'}
+                        </span>
+                        <span className="text-xs text-gray-500">Status: {attempt.status}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <div className="text-sm font-medium text-gray-700 mb-1">Prompt:</div>
+                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                        {attempt.prompt.turns[0]?.content.text || 'No prompt text'}
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="text-sm font-medium text-gray-700 mb-1">Goal:</div>
+                      <div className="text-sm text-gray-600">{attempt.goal}</div>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="text-sm font-medium text-gray-700 mb-1">Detector Results:</div>
+                      <div className="space-y-2">
+                        {Object.entries(attempt.detector_results).map(([detector, scores]) => {
+                          const maxScore = Math.max(...scores);
+                          const hasVulnerability = maxScore > 0.5;
+                          return (
+                            <div key={detector} className="bg-gray-50 rounded p-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-medium text-gray-700">{detector}</span>
+                                <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                  hasVulnerability ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                                }`}>
+                                  {hasVulnerability ? 'VULNERABLE' : 'SAFE'}
+                                </span>
+                              </div>
+                              <div className="flex space-x-1">
+                                {scores.map((score, i) => (
+                                  <span
+                                    key={i}
+                                    className={`px-2 py-1 rounded text-xs font-medium ${getScoreColor(score)}`}
+                                    title={`Generation ${i + 1}: ${score.toFixed(3)}`}
+                                  >
+                                    {score.toFixed(3)}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">Responses:</div>
+                      {(() => {
+                        const responses = analyzeResponses(attempt);
+                        const vulnerableResponses = responses.filter(r => r.isVulnerable);
+                        
+                        return (
+                          <div>
+                            <div className="mb-2">
+                              <span className="text-xs text-gray-500">
+                                {responses.length} responses • {vulnerableResponses.length} vulnerable
+                              </span>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              {responses.map((response, index) => (
+                                <div
+                                  key={index}
+                                  className={`p-2 rounded text-sm ${
+                                    response.isVulnerable
+                                      ? 'bg-red-50 border border-red-200'
+                                      : 'bg-gray-50 border border-gray-200'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-gray-600">
+                                      Response {index + 1}
+                                    </span>
+                                    <div className="flex items-center space-x-2">
+                                      {response.isVulnerable && (
+                                        <span className="text-xs font-medium text-red-800 bg-red-100 px-2 py-1 rounded">
+                                          VULNERABLE
+                                        </span>
+                                      )}
+                                      <span className="text-xs text-gray-500">
+                                        Max Score: {response.maxScore.toFixed(3)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-gray-700 max-h-16 overflow-y-auto">
+                                    {response.text}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
