@@ -5,6 +5,7 @@ import {
   MAX_FILENAME_LENGTH,
   MAX_FILE_SIZE,
   FILENAME_REGEX,
+  FOLDER_PATH_REGEX,
   MAX_CATEGORY_LENGTH,
   CATEGORY_REGEX,
   MIN_PAGE_SIZE,
@@ -162,6 +163,57 @@ export function validateReportDirectory(reportDir: string): { isValid: boolean; 
 }
 
 /**
+ * Validates a folder path to prevent directory traversal
+ */
+export function validateFolderPath(folderPath: string): { isValid: boolean; sanitized?: string; error?: string } {
+  if (!folderPath || typeof folderPath !== 'string') {
+    return { isValid: false, error: 'Folder path is required' };
+  }
+
+  // Check length
+  if (folderPath.length > MAX_FILENAME_LENGTH) {
+    return { isValid: false, error: 'Folder path too long' };
+  }
+
+  // Check for empty path
+  if (folderPath.trim().length === 0) {
+    return { isValid: false, error: 'Folder path cannot be empty' };
+  }
+
+  // Decode URL encoding
+  let decodedPath: string;
+  try {
+    decodedPath = decodeURIComponent(folderPath);
+  } catch {
+    return { isValid: false, error: 'Invalid folder path encoding' };
+  }
+
+  // Check for directory traversal patterns
+  const dangerousPatterns = [
+    '..',
+    '\0', // null byte
+    '\x00', // null byte hex
+    '%2e%2e', // URL encoded ..
+    '%5c', // URL encoded \
+    '..%2f', // mixed encoding
+    '%2e%2e%2f', // mixed encoding
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (decodedPath.toLowerCase().includes(pattern.toLowerCase())) {
+      return { isValid: false, error: 'Invalid folder path: contains dangerous characters' };
+    }
+  }
+
+  // Check for dangerous characters (but allow most printable characters and forward slashes)
+  if (!FOLDER_PATH_REGEX.test(decodedPath)) {
+    return { isValid: false, error: 'Folder path contains invalid characters' };
+  }
+
+  return { isValid: true, sanitized: decodedPath };
+}
+
+/**
  * Safely constructs a file path and validates it's within the allowed directory
  */
 export function buildSafeFilePath(reportDir: string, filename: string): { isValid: boolean; filePath?: string; error?: string } {
@@ -195,6 +247,42 @@ export function buildSafeFilePath(reportDir: string, filename: string): { isVali
     }
 
   return { isValid: true, filePath };
+}
+
+/**
+ * Safely constructs a folder path and validates it's within the allowed directory
+ */
+export function buildSafeFolderPath(reportDir: string, folderPath: string): { isValid: boolean; folderPath?: string; error?: string } {
+  // Validate directory
+  const dirValidation = validateReportDirectory(reportDir);
+  if (!dirValidation.isValid) {
+    return { isValid: false, error: dirValidation.error };
+  }
+
+  // Validate folder path
+  const folderPathValidation = validateFolderPath(folderPath);
+  if (!folderPathValidation.isValid) {
+    return { isValid: false, error: folderPathValidation.error };
+  }
+
+  // Build the folder path
+  const fullFolderPath = join(dirValidation.sanitized!, folderPathValidation.sanitized!);
+
+  // Final security check: ensure the resolved folder path is within the report directory
+  try {
+    const resolvedFolderPath = resolve(fullFolderPath);
+    const resolvedDir = resolve(dirValidation.sanitized!);
+    
+    // Check if the folder path is within the directory
+    const relativePath = relative(resolvedDir, resolvedFolderPath);
+    if (relativePath.startsWith('..') || relativePath.includes('..')) {
+      return { isValid: false, error: 'Folder path is outside allowed directory' };
+    }
+    } catch {
+      return { isValid: false, error: 'Cannot validate folder path' };
+    }
+
+  return { isValid: true, folderPath: fullFolderPath };
 }
 
 /**

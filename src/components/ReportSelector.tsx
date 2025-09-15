@@ -10,6 +10,9 @@ interface Report {
   size: number;
   startTime: string | null;
   modelName: string | null;
+  folderPath?: string;
+  isDirectory?: boolean;
+  children?: Report[];
 }
 
 interface ReportSelectorProps {
@@ -29,6 +32,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   const updateReportsState = useCallback((reports: Report[], error: string | null = null) => {
@@ -71,6 +75,8 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
         const data = await response.json();
         // Update all state at once to prevent flashing
         updateReportsState(data.reports);
+        // Clear expanded folders to start fresh
+        setExpandedFolders(new Set());
       } catch (err) {
         // Don't set error if the request was aborted
         if (err instanceof Error && err.name === 'AbortError') {
@@ -88,37 +94,50 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     };
   }, [updateReportsState]);
 
+  // Flatten hierarchical structure for display
+  const flattenReports = useCallback((items: Report[], level: number = 0, parentExpanded: boolean = true): Array<Report & { level: number; isVisible: boolean }> => {
+    const result: Array<Report & { level: number; isVisible: boolean }> = [];
+    
+    for (const item of items) {
+      const isVisible = level === 0 || parentExpanded;
+      
+      if (item.isDirectory) {
+        result.push({ ...item, level, isVisible });
+        if (item.children && item.children.length > 0) {
+          // Create the same folder ID as used in toggleFolder
+          const folderId = item.folderPath ? `${item.folderPath}/${item.filename}` : item.filename;
+          const isExpanded = expandedFolders.has(folderId);
+          if (isExpanded && isVisible) {
+            const children = flattenReports(item.children, level + 1, true);
+            result.push(...children);
+          }
+        }
+      } else {
+        result.push({ ...item, level, isVisible });
+      }
+    }
+    
+    return result;
+  }, [expandedFolders]);
+
   // Filter and sort reports
   const filteredAndSortedReports = useMemo(() => {
-    const filtered = reports.filter(report =>
+    // First flatten the hierarchical structure
+    const flattened = flattenReports(reports);
+    
+    // Filter visible items
+    const visible = flattened.filter(item => item.isVisible);
+    
+    // Filter by search term
+    const filtered = visible.filter(report =>
       report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    filtered.sort((a, b) => {
-      let aValue: unknown = a[sortField];
-      let bValue: unknown = b[sortField];
-
-      // Handle date fields
-      if (sortField === 'startTime') {
-        aValue = aValue ? new Date(aValue).getTime() : 0;
-        bValue = bValue ? new Date(bValue).getTime() : 0;
-      }
-
-      // Handle string fields
-      if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
+    // DON'T sort - preserve the order from flattening to maintain hierarchy
     return filtered;
-  }, [reports, searchTerm, sortField, sortDirection]);
+  }, [reports, searchTerm, flattenReports]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedReports.length / itemsPerPage);
@@ -148,6 +167,18 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const handleSearch = (term: string) => {
     setSearchTerm(term);
     setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const toggleFolder = (folderPath: string, folderName: string) => {
+    // Create a unique identifier for the folder
+    const folderId = folderPath ? `${folderPath}/${folderName}` : folderName;
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -331,24 +362,59 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedReports.map((report) => (
                   <tr
-                    key={report.filename}
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => handleReportSelect(report.filename)}
+                    key={`${report.folderPath || ''}-${report.filename}`}
+                    className={`hover:bg-gray-50 ${report.isDirectory ? 'cursor-pointer' : 'cursor-pointer'}`}
+                    onClick={() => {
+                      if (report.isDirectory) {
+                        toggleFolder(report.folderPath || '', report.filename);
+                      } else {
+                        const fullPath = report.folderPath ? `${report.folderPath}/${report.filename}` : report.filename;
+                        handleReportSelect(fullPath);
+                      }
+                    }}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                      <div className="flex items-center" style={{ paddingLeft: `${report.level * 20}px` }}>
                         <div className="flex-shrink-0 h-8 w-8">
-                          <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                            report.isDirectory 
+                              ? 'bg-yellow-100' 
+                              : 'bg-blue-100'
+                          }`}>
+                            {report.isDirectory ? (
+                              <svg className="h-4 w-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                              </svg>
+                            ) : (
+                              <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            )}
                           </div>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                            {report.modelName || report.filename}
+                            {report.isDirectory ? (
+                              <div className="flex items-center">
+                                <span>{report.filename}</span>
+                                {report.children && report.children.length > 0 && (
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    ({report.children.length} items)
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <>
+                                {report.modelName || report.filename}
+                                {report.folderPath && (
+                                  <div className="text-xs text-gray-500">
+                                    in {report.folderPath}
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
-                          {report.modelName && (
+                          {report.modelName && !report.isDirectory && (
                             <div className="text-xs text-gray-500 truncate max-w-xs">
                               {report.filename}
                             </div>
@@ -358,26 +424,47 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 font-mono">
-                        {report.runId.substring(0, 8)}...
+                        {report.isDirectory ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          `${report.runId.substring(0, 8)}...`
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {formatFileSize(report.size)}
+                        {report.isDirectory ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          formatFileSize(report.size)
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {report.startTime ? formatDate(report.startTime) : 'Unknown'}
+                        {report.isDirectory ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          report.startTime ? formatDate(report.startTime) : 'Unknown'
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center text-blue-600 hover:text-blue-900">
-                        <span>View</span>
-                        <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
+                      {report.isDirectory ? (
+                        <div className="flex items-center text-yellow-600 hover:text-yellow-900">
+                          <span>{expandedFolders.has(report.folderPath ? `${report.folderPath}/${report.filename}` : report.filename) ? 'Collapse' : 'Expand'}</span>
+                          <svg className={`ml-1 w-4 h-4 transition-transform ${expandedFolders.has(report.folderPath ? `${report.folderPath}/${report.filename}` : report.filename) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-blue-600 hover:text-blue-900">
+                          <span>View</span>
+                          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

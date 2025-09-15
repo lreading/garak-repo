@@ -1,10 +1,17 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface FileUploadProps {
   onUploadSuccess?: (filename: string) => void;
   onUploadError?: (error: string) => void;
+}
+
+interface Folder {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: Folder[];
 }
 
 interface UploadProgress {
@@ -17,9 +24,34 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ uploading: false, progress: 0 });
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<string>('');
+  const [newFolderName, setNewFolderName] = useState<string>('');
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [, setLoadingFolders] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback(async (file: File) => {
+  // Load folders on component mount
+  useEffect(() => {
+    const loadFolders = async () => {
+      try {
+        const response = await fetch('/api/folders');
+        if (response.ok) {
+          const data = await response.json();
+          setFolders(data.folders || []);
+        }
+      } catch (err) {
+        console.error('Failed to load folders:', err);
+      } finally {
+        setLoadingFolders(false);
+      }
+    };
+    
+    loadFolders();
+  }, []);
+
+  const handleFileSelect = useCallback((file: File) => {
     // Reset error state
     setError(null);
 
@@ -40,12 +72,23 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
       return;
     }
 
+    // Just set the selected file, don't upload yet
+    setSelectedFile(file);
+  }, [onUploadError]);
+
+  const handleUpload = useCallback(async () => {
+    if (!selectedFile) return;
+
     // Start upload
-    setUploadProgress({ uploading: true, progress: 0, filename: file.name });
+    setUploadProgress({ uploading: true, progress: 0, filename: selectedFile.name });
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', selectedFile);
+      
+      if (selectedFolder) {
+        formData.append('folderPath', selectedFolder);
+      }
 
       const response = await fetch('/api/upload-report', {
         method: 'POST',
@@ -59,12 +102,13 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
       }
 
       // Upload successful
-      setUploadProgress({ uploading: false, progress: 100, filename: file.name });
+      setUploadProgress({ uploading: false, progress: 100, filename: selectedFile.name });
       onUploadSuccess?.(result.filename);
 
       // Reset after a short delay
       setTimeout(() => {
         setUploadProgress({ uploading: false, progress: 0 });
+        setSelectedFile(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -76,7 +120,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
       setUploadProgress({ uploading: false, progress: 0 });
       onUploadError?.(errorMsg);
     }
-  }, [onUploadSuccess, onUploadError]);
+  }, [selectedFile, selectedFolder, onUploadSuccess, onUploadError]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,6 +148,46 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
     }
   }, [handleFileSelect]);
 
+  const handleCreateFolder = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!newFolderName.trim()) return;
+    
+    // Clear any existing errors
+    setError(null);
+    
+    try {
+      const folderPath = selectedFolder ? `${selectedFolder}/${newFolderName}` : newFolderName;
+      const response = await fetch('/api/folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ folderPath }),
+      });
+      
+      if (response.ok) {
+        // Reload folders
+        const foldersResponse = await fetch('/api/folders');
+        if (foldersResponse.ok) {
+          const data = await foldersResponse.json();
+          setFolders(data.folders || []);
+        }
+        setNewFolderName('');
+        setShowNewFolderInput(false);
+        setSelectedFolder(folderPath);
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Failed to create folder');
+      }
+    } catch {
+      setError('Failed to create folder');
+    }
+  }, [newFolderName, selectedFolder]);
+
   const handleClick = useCallback(() => {
     if (!uploadProgress.uploading) {
       fileInputRef.current?.click();
@@ -112,6 +196,78 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
 
   return (
     <div className="w-full max-w-2xl mx-auto">
+      {/* Folder Selection */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Upload to Folder (Optional)
+        </label>
+        <div className="flex items-center space-x-2">
+          <select
+            value={selectedFolder}
+            onChange={(e) => setSelectedFolder(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+            disabled={uploadProgress.uploading}
+          >
+            <option value="" className="text-gray-900 bg-white">Root Directory</option>
+            {folders.map((folder) => (
+              <option key={folder.path} value={folder.path} className="text-gray-900 bg-white">
+                {folder.path}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowNewFolderInput(!showNewFolderInput);
+            }}
+            disabled={uploadProgress.uploading}
+            className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            New Folder
+          </button>
+        </div>
+        
+        {showNewFolderInput && (
+          <form 
+            onSubmit={(e) => { e.preventDefault(); handleCreateFolder(e); }} 
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 flex items-center space-x-2"
+          >
+            <input
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Folder name"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+              disabled={uploadProgress.uploading}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              type="submit"
+              disabled={uploadProgress.uploading || !newFolderName.trim()}
+              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Create
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowNewFolderInput(false);
+                setNewFolderName('');
+              }}
+              disabled={uploadProgress.uploading}
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+      </div>
+
       {/* Upload Area */}
       <div
         className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -185,6 +341,38 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
           </div>
         )}
       </div>
+
+      {/* Selected File Display and Upload Button */}
+      {selectedFile && !uploadProgress.uploading && (
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="h-8 w-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-blue-900">{selectedFile.name}</p>
+                <p className="text-xs text-blue-700">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                disabled={uploadProgress.uploading}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Upload Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (

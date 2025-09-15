@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir, access } from 'fs/promises';
-import { validateFilename, buildSafeFilePath, sanitizeError } from '@/lib/security';
+import { join } from 'path';
+import { validateFilename, buildSafeFilePath, buildSafeFolderPath, sanitizeError } from '@/lib/security';
 import { GarakReportEntry } from '@/lib/garak-parser';
 import { MAX_FILE_SIZE, ALLOWED_FILE_EXTENSIONS } from '@/lib/security-config';
 
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
     // Parse the multipart form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const folderPath = formData.get('folderPath') as string;
 
     if (!file) {
       return NextResponse.json(
@@ -171,8 +173,10 @@ export async function POST(request: NextRequest) {
 
     // Get report directory and ensure it exists
     const reportDir = getReportDir();
+    const targetDir = folderPath ? `${reportDir}/${folderPath}` : reportDir;
+    
     try {
-      await mkdir(reportDir, { recursive: true });
+      await mkdir(targetDir, { recursive: true });
     } catch (error) {
       console.error('Failed to create report directory:', error);
       return NextResponse.json(
@@ -182,10 +186,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Get unique filename (handles conflicts by appending numbers)
-    const filename = await getUniqueFilename(reportDir, file.name);
+    const filename = await getUniqueFilename(targetDir, file.name);
 
-    // Build safe file path
-    const filePathValidation = buildSafeFilePath(reportDir, filename);
+    // Build safe file path - handle folder path and filename separately
+    let filePathValidation;
+    if (folderPath) {
+      // Validate folder path separately
+      const folderPathValidation = buildSafeFolderPath(reportDir, folderPath);
+      if (!folderPathValidation.isValid) {
+        return NextResponse.json(
+          { error: folderPathValidation.error },
+          { status: 400 }
+        );
+      }
+      
+      // Validate filename separately
+      const filenameValidation = validateFilename(filename);
+      if (!filenameValidation.isValid) {
+        return NextResponse.json(
+          { error: filenameValidation.error },
+          { status: 400 }
+        );
+      }
+      
+      // Build the full path safely
+      const fullFilePath = join(folderPathValidation.folderPath!, filenameValidation.sanitized!);
+      filePathValidation = { isValid: true, filePath: fullFilePath };
+    } else {
+      // No folder path, use the original validation
+      filePathValidation = buildSafeFilePath(reportDir, filename);
+    }
+    
     if (!filePathValidation.isValid) {
       return NextResponse.json(
         { error: filePathValidation.error },
@@ -205,9 +236,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Return success response with file info
+    const responsePath = folderPath ? `${folderPath}/${filename}` : filename;
     return NextResponse.json({
       success: true,
-      filename: filename,
+      filename: responsePath,
       size: file.size,
       metadata: reportValidation.metadata
     });

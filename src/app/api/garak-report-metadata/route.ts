@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
+import { join } from 'path';
 import { 
   validateFilename, 
   validateReportDirectory, 
   buildSafeFilePath, 
+  buildSafeFolderPath,
   validateFile, 
   sanitizeError 
 } from '@/lib/security';
@@ -20,15 +22,6 @@ export async function GET(request: Request) {
       );
     }
     
-    // Validate filename with comprehensive security checks
-    const filenameValidation = validateFilename(filename);
-    if (!filenameValidation.isValid) {
-      return NextResponse.json(
-        { error: filenameValidation.error },
-        { status: 400 }
-      );
-    }
-    
     // Validate and sanitize report directory
     const reportDir = process.env.REPORT_DIR || './data';
     const dirValidation = validateReportDirectory(reportDir);
@@ -39,8 +32,49 @@ export async function GET(request: Request) {
       );
     }
     
-    // Build safe file path
-    const pathValidation = buildSafeFilePath(reportDir, filename);
+    // Handle file paths with folders - validate folder path and filename separately
+    let pathValidation;
+    if (filename.includes('/')) {
+      // File is in a subfolder
+      const pathParts = filename.split('/');
+      const folderPath = pathParts.slice(0, -1).join('/');
+      const fileName = pathParts[pathParts.length - 1];
+      
+      // Validate folder path
+      const folderPathValidation = buildSafeFolderPath(reportDir, folderPath);
+      if (!folderPathValidation.isValid) {
+        return NextResponse.json(
+          { error: folderPathValidation.error },
+          { status: 400 }
+        );
+      }
+      
+      // Validate filename
+      const filenameValidation = validateFilename(fileName);
+      if (!filenameValidation.isValid) {
+        return NextResponse.json(
+          { error: filenameValidation.error },
+          { status: 400 }
+        );
+      }
+      
+      // Build the full path safely
+      const fullFilePath = join(folderPathValidation.folderPath!, filenameValidation.sanitized!);
+      pathValidation = { isValid: true, filePath: fullFilePath };
+    } else {
+      // File is in root directory
+      const filenameValidation = validateFilename(filename);
+      if (!filenameValidation.isValid) {
+        return NextResponse.json(
+          { error: filenameValidation.error },
+          { status: 400 }
+        );
+      }
+      
+      // Build safe file path
+      pathValidation = buildSafeFilePath(reportDir, filename);
+    }
+    
     if (!pathValidation.isValid) {
       return NextResponse.json(
         { error: pathValidation.error },

@@ -72,8 +72,8 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
               <div className="flex items-center space-x-4 mb-1">
                 <button
                   onClick={() => router.push('/')}
@@ -85,13 +85,54 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   Back to Reports
                 </button>
               </div>
+              
               <h1 className="text-2xl font-bold text-gray-900">Garak Report Visualizer</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Run ID: {reportData.runId} | Version: {reportData.garakVersion}
-              </p>
-              <p className="text-xs text-gray-500">
-                Started: {new Date(reportData.startTime).toLocaleString()}
-              </p>
+              
+              {/* File Path Breadcrumb */}
+              <div className="mt-2">
+                <nav className="flex items-center space-x-2 text-sm text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  <span>Reports</span>
+                  {filename.includes('/') ? (
+                    <>
+                      {filename.split('/').map((part, index, array) => (
+                        <span key={index} className="flex items-center">
+                          <svg className="w-3 h-3 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className={index === array.length - 1 ? 'text-gray-900 font-medium' : ''}>
+                            {part}
+                          </span>
+                        </span>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className="text-gray-900 font-medium">{filename}</span>
+                    </>
+                  )}
+                </nav>
+              </div>
+            </div>
+            
+            {/* Metadata on the right */}
+            <div className="text-right text-sm text-gray-600 ml-8">
+              <div className="space-y-1">
+                <div>
+                  <span className="font-medium">Run ID:</span> {reportData.runId}
+                </div>
+                <div>
+                  <span className="font-medium">Version:</span> {reportData.garakVersion}
+                </div>
+                <div className="text-xs text-gray-500">
+                  <span className="font-medium">Started:</span> {new Date(reportData.startTime).toLocaleString()}
+                </div>
+              </div>
             </div>
           </div>
         </div>

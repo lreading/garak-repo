@@ -6,6 +6,17 @@ import {
   sanitizeError 
 } from '@/lib/security';
 
+interface ReportItem {
+  filename: string;
+  runId: string;
+  size: number;
+  startTime: string | null;
+  modelName: string | null;
+  folderPath?: string;
+  isDirectory?: boolean;
+  children?: ReportItem[];
+}
+
 // Helper function to extract metadata from JSONL file efficiently
 function getReportMetadata(filePath: string): { startTime: string | null; modelName: string | null } {
   try {
@@ -59,6 +70,75 @@ function getReportMetadata(filePath: string): { startTime: string | null; modelN
   }
 }
 
+// Recursively scan directory for reports and folders
+function scanDirectory(dirPath: string, basePath: string, relativePath: string = ''): ReportItem[] {
+  try {
+    const items = readdirSync(dirPath);
+    const result: ReportItem[] = [];
+    
+    for (const item of items) {
+      const itemPath = join(dirPath, item);
+      const stats = statSync(itemPath);
+      const itemRelativePath = relativePath ? `${relativePath}/${item}` : item;
+      
+      if (stats.isDirectory()) {
+        // It's a directory, scan it recursively
+        const children = scanDirectory(itemPath, basePath, itemRelativePath);
+        result.push({
+          filename: item,
+          runId: '',
+          size: 0,
+          startTime: null,
+          modelName: null,
+          folderPath: relativePath || undefined,
+          isDirectory: true,
+          children: children
+        });
+      } else if (item.endsWith('.jsonl')) {
+        // It's a report file
+        try {
+          // Additional security: ensure filename is safe
+          if (typeof item !== 'string') continue;
+          if (item.length > 255) continue;
+          
+          // Check for directory traversal patterns (but allow forward slashes for subdirectories)
+          if (item.includes('../') || item.includes('..\\') || item.includes('\\') || item.startsWith('..')) {
+            continue;
+          }
+          
+          // Additional security: ensure it's a file and not too large
+          if (!stats.isFile() || stats.size > 500 * 1024 * 1024) {
+            continue;
+          }
+        
+          // Extract run ID from filename (format: garak.{uuid}.jsonl)
+          const runIdMatch = item.match(/garak\.([^.]+)\.jsonl/);
+          const runId = runIdMatch ? runIdMatch[1] : item;
+          
+          // Get metadata from the report file
+          const { startTime, modelName } = getReportMetadata(itemPath);
+          
+          result.push({
+            filename: item,
+            runId: runId,
+            size: stats.size,
+            startTime: startTime,
+            modelName: modelName,
+            folderPath: relativePath || undefined
+          });
+        } catch {
+          // Skip files that can't be processed
+          continue;
+        }
+      }
+    }
+    
+    return result;
+  } catch {
+    return [];
+  }
+}
+
 export async function GET() {
   try {
     // Validate and sanitize report directory
@@ -73,68 +153,37 @@ export async function GET() {
     
     const dataDir = dirValidation.sanitized!;
     
-    // Read all files in the data directory
-    const files = readdirSync(dataDir);
+    // Scan directory recursively for reports and folders
+    const reports = scanDirectory(dataDir, dataDir);
     
-    // Filter for JSONL files and get their metadata
-    const reports = files
-      .filter(file => {
-        // Additional security: ensure filename is safe
-        if (typeof file !== 'string') return false;
-        if (file.length > 255) return false;
+    // Sort items: folders first, then reports by start time
+    const sortItems = (items: ReportItem[]): ReportItem[] => {
+      return items.sort((a, b) => {
+        // Directories come first
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
         
-        // Check for directory traversal patterns
-        // Block: ../, ..\, /, \, and filenames starting with ..
-        if (file.includes('../') || file.includes('..\\') || file.includes('/') || file.includes('\\') || file.startsWith('..')) {
-          return false;
+        // If both are directories, sort by name
+        if (a.isDirectory && b.isDirectory) {
+          return a.filename.localeCompare(b.filename);
         }
         
-        return file.endsWith('.jsonl');
-      })
-      .map((file) => {
-        const filePath = join(dataDir, file);
-        
-        try {
-          const stats = statSync(filePath);
-          
-          // Additional security: ensure it's a file and not too large
-          // Increased limit to 500MB to accommodate larger report files
-          if (!stats.isFile() || stats.size > 500 * 1024 * 1024) {
-            return null;
-          }
-        
-          // Extract run ID from filename (format: garak.{uuid}.jsonl)
-          const runIdMatch = file.match(/garak\.([^.]+)\.jsonl/);
-          const runId = runIdMatch ? runIdMatch[1] : file;
-          
-          // Get metadata from the report file
-          const { startTime, modelName } = getReportMetadata(filePath);
-          
-          return {
-            filename: file,
-            runId: runId,
-            size: stats.size,
-            startTime: startTime,
-            modelName: modelName
-          };
-        } catch {
-          // Skip files that can't be processed
-          return null;
+        // If both are reports, sort by start time (most recent first)
+        if (a.startTime && b.startTime) {
+          return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
         }
-      })
-      .filter(report => report !== null); // Remove null entries
+        if (a.startTime) return -1;
+        if (b.startTime) return 1;
+        return b.filename.localeCompare(a.filename);
+      }).map(item => ({
+        ...item,
+        children: item.children ? sortItems(item.children) : undefined
+      }));
+    };
     
-    // Sort by start time (most recent first), fallback to filename if no start time
-    reports.sort((a, b) => {
-      if (a.startTime && b.startTime) {
-        return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
-      }
-      if (a.startTime) return -1;
-      if (b.startTime) return 1;
-      return b.filename.localeCompare(a.filename);
-    });
+    const sortedReports = sortItems(reports);
     
-    return NextResponse.json({ reports });
+    return NextResponse.json({ reports: sortedReports });
   } catch (error) {
     const sanitizedError = sanitizeError(error);
     return NextResponse.json(

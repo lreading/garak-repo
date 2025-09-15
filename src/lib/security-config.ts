@@ -21,6 +21,10 @@ export const MAX_FILES_PER_REQUEST = 1000;
 // This regex allows letters, numbers, spaces, and common punctuation while blocking dangerous characters
 export const FILENAME_REGEX = /^[^<>:"/\\|?*\x00-\x1f]+$/;
 
+// Allowed characters in folder paths (allows forward slashes for nested paths)
+// This regex allows letters, numbers, spaces, common punctuation, and forward slashes while blocking dangerous characters
+export const FOLDER_PATH_REGEX = /^[^<>:"\\|?*\x00-\x1f]+$/;
+
 // Maximum length for category names
 export const MAX_CATEGORY_LENGTH = 100;
 
