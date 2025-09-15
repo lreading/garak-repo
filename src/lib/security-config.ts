@@ -6,7 +6,7 @@
  */
 
 // Allowed file extensions for report files
-export const ALLOWED_FILE_EXTENSIONS = ['.report.jsonl'];
+export const ALLOWED_FILE_EXTENSIONS = ['.jsonl'];
 
 // Maximum filename length
 export const MAX_FILENAME_LENGTH = 255;
@@ -17,8 +17,9 @@ export const MAX_FILE_SIZE = 500 * 1024 * 1024;
 // Maximum number of files to process in a single request
 export const MAX_FILES_PER_REQUEST = 1000;
 
-// Allowed characters in filenames (alphanumeric, dots, hyphens, underscores)
-export const FILENAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+// Allowed characters in filenames (more permissive - allows most printable characters except dangerous ones)
+// This regex allows letters, numbers, spaces, and common punctuation while blocking dangerous characters
+export const FILENAME_REGEX = /^[^<>:"/\\|?*\x00-\x1f]+$/;
 
 // Maximum length for category names
 export const MAX_CATEGORY_LENGTH = 100;

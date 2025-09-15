@@ -7,9 +7,10 @@ import { CategoryCard } from '@/components/CategoryCard';
 
 interface GarakDashboardProps {
   reportData: GarakReportData | GarakReportMetadata;
+  filename: string;
 }
 
-export function GarakDashboard({ reportData }: GarakDashboardProps) {
+export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<TestCategory | CategoryMetadata | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<'all' | 'vulnerable' | 'safe'>('all');
@@ -27,7 +28,7 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
     setAttemptsLoading(true);
     try {
       const searchParams = new URLSearchParams();
-      searchParams.set('filename', 'garak.' + reportData.runId + '.report.jsonl');
+      searchParams.set('filename', filename);
       searchParams.set('category', category.name);
       searchParams.set('page', page.toString());
       searchParams.set('limit', '20');

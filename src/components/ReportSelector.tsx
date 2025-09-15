@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { UploadModal } from './UploadModal';
 
 interface Report {
   filename: string;
@@ -27,12 +28,33 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const router = useRouter();
 
   const updateReportsState = useCallback((reports: Report[], error: string | null = null) => {
     setReports(reports);
     setError(error);
     setLoading(false);
+  }, []);
+
+  const handleUploadSuccess = useCallback(() => {
+    // Reload reports to include the newly uploaded file
+    setLoading(true);
+    
+    // Refresh the reports list
+    fetch('/api/reports')
+      .then(response => response.json())
+      .then(data => {
+        updateReportsState(data.reports);
+      })
+      .catch(err => {
+        updateReportsState([], err instanceof Error ? err.message : 'Failed to load reports');
+      });
+  }, [updateReportsState]);
+
+  const handleUploadError = useCallback((error: string) => {
+    console.error('Upload error:', error);
+    // Error is already displayed in the FileUpload component
   }, []);
 
   useEffect(() => {
@@ -201,15 +223,24 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                 Select a report to view detailed analysis
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">{filteredAndSortedReports.length}</div>
-              <div className="text-sm text-gray-600">
-                {searchTerm ? 'Filtered Reports' : 'Available Reports'}
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-gray-900">{filteredAndSortedReports.length}</div>
+                <div className="text-sm text-gray-600">
+                  {searchTerm ? 'Filtered Reports' : 'Available Reports'}
+                </div>
               </div>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              >
+                Upload Report
+              </button>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Search and Controls */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -461,6 +492,14 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
           </div>
         )}
       </div>
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUploadSuccess={handleUploadSuccess}
+        onUploadError={handleUploadError}
+      />
     </div>
   );
 }

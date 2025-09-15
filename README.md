@@ -53,7 +53,7 @@ The following environment variables can be configured:
 
 ## Usage
 
-1. Place your Garak report files (`.report.jsonl` format) in the directory specified by `REPORT_DIR`
+1. Place your Garak report files (`.jsonl` format) in the directory specified by `REPORT_DIR`
 2. The dashboard will automatically detect and list available reports
 3. Select a report to view detailed analysis including vulnerability categories, attempt results, and statistics
 

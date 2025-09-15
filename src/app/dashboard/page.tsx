@@ -125,5 +125,5 @@ export default function DashboardPage() {
     );
   }
 
-  return <GarakDashboard reportData={reportData} />;
+  return <GarakDashboard reportData={reportData} filename={reportFilename!} />;
 }

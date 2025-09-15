@@ -89,7 +89,7 @@ export async function GET() {
           return false;
         }
         
-        return file.endsWith('.report.jsonl');
+        return file.endsWith('.jsonl');
       })
       .map((file) => {
         const filePath = join(dataDir, file);
@@ -103,8 +103,8 @@ export async function GET() {
             return null;
           }
         
-          // Extract run ID from filename (format: garak.{uuid}.report.jsonl)
-          const runIdMatch = file.match(/garak\.([^.]+)\.report\.jsonl/);
+          // Extract run ID from filename (format: garak.{uuid}.jsonl)
+          const runIdMatch = file.match(/garak\.([^.]+)\.jsonl/);
           const runId = runIdMatch ? runIdMatch[1] : file;
           
           // Get metadata from the report file

@@ -74,14 +74,9 @@ export function validateFilename(filename: string): { isValid: boolean; sanitize
     return { isValid: false, error: 'Invalid file extension' };
   }
 
-  // Check for only alphanumeric, dots, hyphens, underscores
+  // Check for dangerous characters (but allow most printable characters)
   if (!FILENAME_REGEX.test(decodedFilename)) {
     return { isValid: false, error: 'Filename contains invalid characters' };
-  }
-
-  // Ensure filename doesn't start with dot (hidden files)
-  if (decodedFilename.startsWith('.')) {
-    return { isValid: false, error: 'Filename cannot start with dot' };
   }
 
   return { isValid: true, sanitized: decodedFilename };
