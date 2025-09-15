@@ -1,6 +1,17 @@
-# Garak Report Dashboard
+# Garak Report Repository
 
-A Next.js dashboard for visualizing and analyzing Garak security testing reports.
+A comprehensive repository and analysis tool for storing, organizing, and analyzing Garak security testing reports. This application serves as both a storage repository for your Garak runs and an advanced dashboard for drilling down into specific attempts and responses to understand exact failures and identify false positives.
+
+## Features
+
+- **Report Repository**: Store and organize your Garak security testing reports in a centralized location
+- **Web-based Upload**: Upload new reports directly through the web interface
+- **Folder Organization**: Organize reports in folders with hierarchical browsing
+- **Advanced Analytics**: View comprehensive statistics including vulnerability rates, test categories, and overall security posture
+- **Drill-down Analysis**: Examine individual test attempts and responses to understand specific failures
+- **False Positive Detection**: Analyze detector results and responses to identify potential false positives
+- **Search & Filter**: Search through test categories and filter attempts by vulnerability status
+- **Detailed Response Analysis**: View full prompts, responses, and detector scores for each attempt
 
 ## Getting Started
 
@@ -27,12 +38,6 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -53,23 +58,36 @@ The following environment variables can be configured:
 
 ## Usage
 
-1. Place your Garak report files (`.jsonl` format) in the directory specified by `REPORT_DIR`
-2. The dashboard will automatically detect and list available reports
-3. Select a report to view detailed analysis including vulnerability categories, attempt results, and statistics
+### Storing Reports
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Upload via Web Interface**: Use the upload button to add new Garak report files (`.jsonl` format) directly through the web interface
+2. **File System**: Place your Garak report files in the directory specified by `REPORT_DIR` - the application will automatically detect and list them
+3. **Folder Organization**: Organize reports in subdirectories for better management of multiple test runs
 
-## Learn More
+### Analyzing Reports
 
-To learn more about Next.js, take a look at the following resources:
+1. **Browse Reports**: The dashboard automatically detects and lists all available reports with metadata including run ID, model name, and test statistics
+2. **Select a Report**: Click on any report to view comprehensive analysis including:
+   - Overall vulnerability statistics and test category breakdown
+   - Individual test category performance with vulnerability rates
+   - DEFCON grades and Z-scores for each category
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Drill-down Analysis
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The key benefit of this repository is the ability to drill down into specific attempts and responses:
 
-## Deploy on Vercel
+1. **Category Analysis**: Click on any test category to view detailed attempt-level data
+2. **Filter Attempts**: Filter attempts by vulnerability status (All, Vulnerable, Safe) to focus on specific issues
+3. **Examine Individual Attempts**: View complete details for each attempt including:
+   - Full prompt text and test goals
+   - All model responses with vulnerability scoring
+   - Detector results with individual scores for each response
+   - Response analysis showing which specific responses triggered vulnerabilities
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. **Identify False Positives**: By examining the full context of prompts and responses, you can:
+   - Understand why certain responses were flagged as vulnerable
+   - Identify cases where detectors may have produced false positives
+   - Analyze the quality and appropriateness of model responses
+   - Make informed decisions about security posture
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This detailed analysis capability helps you understand not just that vulnerabilities were found, but exactly what went wrong and whether the detections are accurate.
