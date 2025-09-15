@@ -33,8 +33,11 @@ export async function GET(request: Request) {
       );
     }
     
-    // Read the report file from the data directory
-    const reportPath = join(process.cwd(), 'data', filename);
+    // Read the report file from the configured reports directory
+    const reportDir = process.env.REPORT_DIR || './data';
+    const reportPath = reportDir.startsWith('/') 
+      ? join(reportDir, filename)
+      : join(process.cwd(), reportDir, filename);
     const reportContent = readFileSync(reportPath, 'utf-8');
     
     // Parse attempts for the specific category with pagination

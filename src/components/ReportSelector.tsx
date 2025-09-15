@@ -7,15 +7,15 @@ interface Report {
   filename: string;
   runId: string;
   size: number;
-  created: string;
-  modified: string;
+  startTime: string | null;
+  modelName: string | null;
 }
 
 interface ReportSelectorProps {
   onReportSelect?: (filename: string) => void;
 }
 
-type SortField = 'filename' | 'runId' | 'size' | 'created' | 'modified';
+type SortField = 'filename' | 'runId' | 'size' | 'startTime';
 type SortDirection = 'asc' | 'desc';
 
 export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
@@ -23,7 +23,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<SortField>('modified');
+  const [sortField, setSortField] = useState<SortField>('startTime');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -65,7 +65,8 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const filteredAndSortedReports = useMemo(() => {
     let filtered = reports.filter(report =>
       report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.runId.toLowerCase().includes(searchTerm.toLowerCase())
+      report.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     filtered.sort((a, b) => {
@@ -73,9 +74,9 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
       let bValue: any = b[sortField];
 
       // Handle date fields
-      if (sortField === 'created' || sortField === 'modified') {
-        aValue = new Date(aValue).getTime();
-        bValue = new Date(bValue).getTime();
+      if (sortField === 'startTime') {
+        aValue = aValue ? new Date(aValue).getTime() : 0;
+        bValue = bValue ? new Date(bValue).getTime() : 0;
       }
 
       // Handle string fields
@@ -275,25 +276,11 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('created')}
+                    onClick={() => handleSort('startTime')}
                   >
                     <div className="flex items-center space-x-1">
-                      <span>Created</span>
-                      {sortField === 'created' && (
-                        <svg className={`w-4 h-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('modified')}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span>Modified</span>
-                      {sortField === 'modified' && (
+                      <span>Run Started</span>
+                      {sortField === 'startTime' && (
                         <svg className={`w-4 h-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                         </svg>
@@ -323,8 +310,13 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                            {report.filename}
+                            {report.modelName || report.filename}
                           </div>
+                          {report.modelName && (
+                            <div className="text-xs text-gray-500 truncate max-w-xs">
+                              {report.filename}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -340,12 +332,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {formatDate(report.created)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(report.modified)}
+                        {report.startTime ? formatDate(report.startTime) : 'Unknown'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

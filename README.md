@@ -1,6 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Garak Report Dashboard
+
+A Next.js dashboard for visualizing and analyzing Garak security testing reports.
 
 ## Getting Started
+
+### Environment Setup
+
+1. Copy the example environment file:
+   ```bash
+   cp example.env .env
+   ```
+
+2. Configure the `REPORT_DIR` environment variable in your `.env` file:
+   ```bash
+   # Directory where Garak report files are stored
+   REPORT_DIR=./data
+   ```
+
+   **Path handling:**
+   - **Relative paths** (like `./data`, `../reports`) are resolved from the project root
+   - **Absolute paths** (starting with `/`) are used as-is
+
+### Running the Application
 
 First, run the development server:
 
@@ -16,7 +37,25 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
+
+The following environment variables can be configured:
+
+### `REPORT_DIR`
+- **Description**: Directory where Garak report files are stored
+- **Default**: `./data`
+- **Examples**: 
+  - `REPORT_DIR=./data` (relative to project root)
+  - `REPORT_DIR=/var/log/garak/reports` (absolute path)
+- **Path handling**: 
+  - Relative paths are resolved from the project root
+  - Absolute paths (starting with `/`) are used as-is
+
+## Usage
+
+1. Place your Garak report files (`.report.jsonl` format) in the directory specified by `REPORT_DIR`
+2. The dashboard will automatically detect and list available reports
+3. Select a report to view detailed analysis including vulnerability categories, attempt results, and statistics
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
