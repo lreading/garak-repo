@@ -1,6 +1,6 @@
 # Garak Report Repository
 
-A comprehensive repository and analysis tool for storing, organizing, and analyzing Garak security testing reports. This application serves as both a storage repository for your Garak runs and an advanced dashboard for drilling down into specific attempts and responses to understand exact failures and identify false positives.
+A comprehensive repository and analysis tool for storing, organizing, and analyzing [Garak](https://github.com/NVIDIA/garak) security testing reports. This application serves as both a storage repository for your Garak runs and an advanced dashboard for drilling down into specific attempts and responses to understand exact failures and identify false positives.
 
 ## Features
 
