@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Report {
@@ -29,6 +29,12 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const [itemsPerPage] = useState(10);
   const router = useRouter();
 
+  const updateReportsState = useCallback((reports: Report[], error: string | null = null) => {
+    setReports(reports);
+    setError(error);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     const abortController = new AbortController();
     
@@ -41,15 +47,14 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
           throw new Error('Failed to load reports');
         }
         const data = await response.json();
-        setReports(data.reports);
+        // Update all state at once to prevent flashing
+        updateReportsState(data.reports);
       } catch (err) {
         // Don't set error if the request was aborted
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        setError(err instanceof Error ? err.message : 'Failed to load reports');
-      } finally {
-        setLoading(false);
+        updateReportsState([], err instanceof Error ? err.message : 'Failed to load reports');
       }
     }
 
@@ -59,7 +64,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     return () => {
       abortController.abort();
     };
-  }, []);
+  }, [updateReportsState]);
 
   // Filter and sort reports
   const filteredAndSortedReports = useMemo(() => {
@@ -168,7 +173,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     );
   }
 
-  if (reports.length === 0) {
+  if (!loading && reports.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -434,7 +439,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
           </div>
         )}
 
-        {filteredAndSortedReports.length === 0 && !loading && (
+        {!loading && filteredAndSortedReports.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.709M15 6.291A7.962 7.962 0 0012 5c-2.34 0-4.29 1.009-5.824 2.709" />
