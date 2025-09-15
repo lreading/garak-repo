@@ -70,31 +70,27 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center space-x-4 mb-2">
+              <div className="flex items-center space-x-4 mb-1">
                 <button
                   onClick={() => router.push('/')}
                   className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                   Back to Reports
                 </button>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">Garak Report Visualizer</h1>
-              <p className="mt-2 text-gray-600">
+              <h1 className="text-2xl font-bold text-gray-900">Garak Report Visualizer</h1>
+              <p className="mt-1 text-sm text-gray-600">
                 Run ID: {reportData.runId} | Version: {reportData.garakVersion}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs text-gray-500">
                 Started: {new Date(reportData.startTime).toLocaleString()}
               </p>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">{reportData.totalAttempts}</div>
-              <div className="text-sm text-gray-600">Total Tests</div>
             </div>
           </div>
         </div>
