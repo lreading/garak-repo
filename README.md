@@ -84,25 +84,30 @@ You can also run the application using Docker:
      garak-repository
    ```
 
+4. **Run in detached mode (background):**
+   ```bash
+   docker run -d -p 3000:3000 \
+     -v /path/to/your/reports:/app/data \
+     -e "REPORT_DIR=/app/data" \
+     --name garak-repo \
+     garak-repository
+   ```
+
+5. **Stop the container:**
+   ```bash
+   docker stop garak-repo
+   ```
+
+6. **View container logs:**
+   ```bash
+   docker logs garak-repo
+   ```
+
 The Docker container will:
 - Serve the application on port 3000
 - Mount your report directory to `/app/data` inside the container
 - Automatically detect and serve your Garak report files
-
-4. **Using Docker Compose (recommended):**
-   
-   First, update the volume path in `docker-compose.yml` to point to your reports directory:
-   ```yaml
-   volumes:
-     - /path/to/your/reports:/app/data
-   ```
-   
-   Then run:
-   ```bash
-   docker-compose up -d
-   ```
-   
-   This will build and start the container in the background with health checks enabled.
+- Run in standalone mode for optimal performance
 
 ## Environment Variables
 
