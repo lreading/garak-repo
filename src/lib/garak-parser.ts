@@ -272,8 +272,6 @@ export function getDefconLabel(grade: number): string {
   }
 }
 
-// Calculate Z-score for vulnerability rate
-// For now, using simplified calculation - in real Garak, this would be against historical data
 export function calculateZScore(vulnerabilityRate: number, allRates: number[]): number {
   if (allRates.length === 0) return 0;
   
