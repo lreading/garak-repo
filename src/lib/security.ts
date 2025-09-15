@@ -49,12 +49,10 @@ export function validateFilename(filename: string): { isValid: boolean; sanitize
   // Check for directory traversal patterns
   const dangerousPatterns = [
     '..',
-    '/',
     '\\',
     '\0', // null byte
     '\x00', // null byte hex
     '%2e%2e', // URL encoded ..
-    '%2f', // URL encoded /
     '%5c', // URL encoded \
     '..%2f', // mixed encoding
     '%2e%2e%2f', // mixed encoding
@@ -64,6 +62,11 @@ export function validateFilename(filename: string): { isValid: boolean; sanitize
     if (decodedFilename.toLowerCase().includes(pattern.toLowerCase())) {
       return { isValid: false, error: 'Invalid filename: contains dangerous characters' };
     }
+  }
+
+  // Check for directory traversal with forward slashes (but allow legitimate folder separators)
+  if (decodedFilename.includes('..')) {
+    return { isValid: false, error: 'Invalid filename: contains directory traversal' };
   }
 
   // Check file extension

@@ -18,8 +18,8 @@ export const MAX_FILE_SIZE = 500 * 1024 * 1024;
 export const MAX_FILES_PER_REQUEST = 1000;
 
 // Allowed characters in filenames (more permissive - allows most printable characters except dangerous ones)
-// This regex allows letters, numbers, spaces, and common punctuation while blocking dangerous characters
-export const FILENAME_REGEX = /^[^<>:"/\\|?*\x00-\x1f]+$/;
+// This regex allows letters, numbers, spaces, common punctuation, and forward slashes for folder separators while blocking dangerous characters
+export const FILENAME_REGEX = /^[^<>:"\\|?*\x00-\x1f]+$/;
 
 // Allowed characters in folder paths (allows forward slashes for nested paths)
 // This regex allows letters, numbers, spaces, common punctuation, and forward slashes while blocking dangerous characters
