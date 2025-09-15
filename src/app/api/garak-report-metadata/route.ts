@@ -55,6 +55,7 @@ interface ReportMetadata {
     defconGrade: number;
     zScore: number;
     vulnerabilityRate: number;
+    groupLink?: string;
   }>;
 }
 
@@ -64,6 +65,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
   let startTime = '';
   let garakVersion = '';
   let totalAttempts = 0;
+  let digestData: any = null;
   
   // Count attempts by category without loading full data
   const categoryCounts = new Map<string, number>();
@@ -80,6 +82,8 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
         runId = entry.run || '';
         startTime = entry.start_time || '';
         garakVersion = entry.garak_version || '';
+      } else if (entry.entry_type === 'digest') {
+        digestData = entry;
       } else if (entry.entry_type === 'attempt') {
         totalAttempts++;
         
@@ -147,6 +151,9 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
     const zScore = calculateZScore(vulnerabilityRate, vulnerabilityRates);
     const defconGrade = calculateDefconGrade(vulnerabilityRate);
     
+    // Extract group link from digest data
+    const groupLink = digestData?.eval?.[categoryName]?._summary?.group_link;
+    
     categories.push({
       name: categoryName,
       displayName: getDisplayName(categoryName),
@@ -157,7 +164,8 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
       successRate,
       defconGrade,
       zScore,
-      vulnerabilityRate
+      vulnerabilityRate,
+      groupLink
     });
   }
   

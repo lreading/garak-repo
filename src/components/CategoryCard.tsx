@@ -1,9 +1,9 @@
 'use client';
 
-import { TestCategory, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel } from '@/lib/garak-parser';
+import { TestCategory, CategoryMetadata, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel } from '@/lib/garak-parser';
 
 interface CategoryCardProps {
-  category: TestCategory;
+  category: TestCategory | CategoryMetadata;
   onClick: () => void;
 }
 

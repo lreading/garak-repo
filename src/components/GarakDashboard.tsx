@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GarakReportData, TestCategory, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis, GarakAttempt } from '@/lib/garak-parser';
+import { GarakReportData, GarakReportMetadata, TestCategory, CategoryMetadata, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis, GarakAttempt } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
 
 interface GarakDashboardProps {
-  reportData: GarakReportData;
+  reportData: GarakReportData | GarakReportMetadata;
 }
 
 export function GarakDashboard({ reportData }: GarakDashboardProps) {
-  const [selectedCategory, setSelectedCategory] = useState<TestCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TestCategory | CategoryMetadata | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<'all' | 'vulnerable' | 'safe'>('all');
   const [categoryAttempts, setCategoryAttempts] = useState<GarakAttempt[]>([]);
@@ -23,7 +23,7 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
   const router = useRouter();
 
   // Function to load attempts for a category
-  const loadCategoryAttempts = async (category: TestCategory, page: number = 1, filter: string = 'all') => {
+  const loadCategoryAttempts = async (category: TestCategory | CategoryMetadata, page: number = 1, filter: string = 'all') => {
     setAttemptsLoading(true);
     try {
       const searchParams = new URLSearchParams();
@@ -218,9 +218,24 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedCategory.displayName}
-                </h3>
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {selectedCategory.displayName}
+                  </h3>
+                  {selectedCategory.groupLink && (
+                    <a
+                      href={selectedCategory.groupLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-sm text-green-600 hover:text-green-800 transition-colors"
+                    >
+                      <svg className="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      <span>View Documentation</span>
+                    </a>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setSelectedCategory(null);

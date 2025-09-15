@@ -55,10 +55,33 @@ export interface TestCategory {
   defconGrade: number;
   zScore: number;
   vulnerabilityRate: number;
+  groupLink?: string;
+}
+
+export interface CategoryMetadata {
+  name: string;
+  displayName: string;
+  totalAttempts: number;
+  averageScore: number;
+  maxScore: number;
+  minScore: number;
+  successRate: number;
+  defconGrade: number;
+  zScore: number;
+  vulnerabilityRate: number;
+  groupLink?: string;
 }
 
 export interface GarakReportData {
   categories: TestCategory[];
+  totalAttempts: number;
+  runId: string;
+  startTime: string;
+  garakVersion: string;
+}
+
+export interface GarakReportMetadata {
+  categories: CategoryMetadata[];
   totalAttempts: number;
   runId: string;
   startTime: string;
@@ -71,6 +94,7 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
   let runId = '';
   let startTime = '';
   let garakVersion = '';
+  let evalData: any = null;
 
   // Parse each line
   for (const line of lines) {
@@ -83,6 +107,8 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
         garakVersion = entry.garak_version || '';
       } else if (entry.entry_type === 'attempt') {
         attempts.push(entry as unknown as GarakAttempt);
+      } else if (entry.entry_type === 'digest') {
+        evalData = entry;
       }
     } catch (error) {
       console.warn('Failed to parse line:', line);
@@ -142,6 +168,9 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
     const zScore = calculateZScore(vulnerabilityRate, vulnerabilityRates);
     const defconGrade = calculateDefconGrade(vulnerabilityRate);
 
+    // Extract group link from digest data
+    const groupLink = evalData?.eval?.[categoryName]?._summary?.group_link;
+
     categories.push({
       name: categoryName,
       displayName: getDisplayName(categoryName),
@@ -153,7 +182,8 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
       successRate,
       defconGrade,
       zScore,
-      vulnerabilityRate
+      vulnerabilityRate,
+      groupLink
     });
     
     categoryIndex++;

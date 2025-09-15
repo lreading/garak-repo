@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { GarakDashboard } from '@/components/GarakDashboard';
-import { GarakReportData } from '@/lib/garak-parser';
+import { GarakReportMetadata } from '@/lib/garak-parser';
 
 export default function DashboardPage() {
-  const [reportData, setReportData] = useState<GarakReportData | null>(null);
+  const [reportData, setReportData] = useState<GarakReportMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
