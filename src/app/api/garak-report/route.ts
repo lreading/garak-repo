@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { 
+  validateFilename, 
+  validateReportDirectory, 
+  buildSafeFilePath, 
+  validateFile, 
+  sanitizeError 
+} from '@/lib/security';
 
 export async function GET(request: Request) {
   try {
@@ -14,20 +20,45 @@ export async function GET(request: Request) {
       );
     }
     
-    // Validate filename to prevent directory traversal
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    // Validate filename with comprehensive security checks
+    const filenameValidation = validateFilename(filename);
+    if (!filenameValidation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid filename' },
+        { error: filenameValidation.error },
         { status: 400 }
       );
     }
     
-    // Read the report file from the configured reports directory
+    // Validate and sanitize report directory
     const reportDir = process.env.REPORT_DIR || './data';
-    const reportPath = reportDir.startsWith('/') 
-      ? join(reportDir, filename)
-      : join(process.cwd(), reportDir, filename);
-    const reportContent = readFileSync(reportPath, 'utf-8');
+    const dirValidation = validateReportDirectory(reportDir);
+    if (!dirValidation.isValid) {
+      return NextResponse.json(
+        { error: 'Invalid report directory configuration' },
+        { status: 500 }
+      );
+    }
+    
+    // Build safe file path
+    const pathValidation = buildSafeFilePath(reportDir, filename);
+    if (!pathValidation.isValid) {
+      return NextResponse.json(
+        { error: pathValidation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Validate file before reading
+    const fileValidation = validateFile(pathValidation.filePath!);
+    if (!fileValidation.isValid) {
+      return NextResponse.json(
+        { error: fileValidation.error },
+        { status: 404 }
+      );
+    }
+    
+    // Read the report file
+    const reportContent = readFileSync(pathValidation.filePath!, 'utf-8');
     
     return new NextResponse(reportContent, {
       headers: {
@@ -35,9 +66,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Error reading report file:', error);
+    const sanitizedError = sanitizeError(error);
     return NextResponse.json(
-      { error: 'Failed to read report file' },
+      { error: sanitizedError },
       { status: 500 }
     );
   }

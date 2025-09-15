@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
-import { readdirSync, statSync, readFileSync } from 'fs';
+import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { 
+  validateReportDirectory, 
+  sanitizeError 
+} from '@/lib/security';
 
 // Helper function to extract metadata from JSONL file efficiently
 function getReportMetadata(filePath: string): { startTime: string | null; modelName: string | null } {
   try {
     // Read only the first 8KB of the file (should contain first few lines)
     const buffer = Buffer.alloc(8192);
-    const fd = require('fs').openSync(filePath, 'r');
-    const bytesRead = require('fs').readSync(fd, buffer, 0, 8192, 0);
-    require('fs').closeSync(fd);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs');
+    const fd = fs.openSync(filePath, 'r');
+    const bytesRead = fs.readSync(fd, buffer, 0, 8192, 0);
+    fs.closeSync(fd);
     
     const content = buffer.toString('utf8', 0, bytesRead);
     const lines = content.split('\n').slice(0, 3); // Only check first 3 lines
@@ -41,50 +47,82 @@ function getReportMetadata(filePath: string): { startTime: string | null; modelN
         if (startTime && modelName) {
           break;
         }
-      } catch (error) {
+      } catch {
         // Continue to next line if JSON parsing fails
         continue;
       }
     }
     
     return { startTime, modelName };
-  } catch (error) {
+  } catch {
     return { startTime: null, modelName: null };
   }
 }
 
 export async function GET() {
   try {
+    // Validate and sanitize report directory
     const reportDir = process.env.REPORT_DIR || './data';
-    const dataDir = reportDir.startsWith('/') 
-      ? reportDir
-      : join(process.cwd(), reportDir);
+    const dirValidation = validateReportDirectory(reportDir);
+    if (!dirValidation.isValid) {
+      return NextResponse.json(
+        { error: 'Invalid report directory configuration' },
+        { status: 500 }
+      );
+    }
+    
+    const dataDir = dirValidation.sanitized!;
     
     // Read all files in the data directory
     const files = readdirSync(dataDir);
     
     // Filter for JSONL files and get their metadata
     const reports = files
-      .filter(file => file.endsWith('.report.jsonl'))
+      .filter(file => {
+        // Additional security: ensure filename is safe
+        if (typeof file !== 'string') return false;
+        if (file.length > 255) return false;
+        
+        // Check for directory traversal patterns
+        // Block: ../, ..\, /, \, and filenames starting with ..
+        if (file.includes('../') || file.includes('..\\') || file.includes('/') || file.includes('\\') || file.startsWith('..')) {
+          return false;
+        }
+        
+        return file.endsWith('.report.jsonl');
+      })
       .map((file) => {
         const filePath = join(dataDir, file);
-        const stats = statSync(filePath);
         
-        // Extract run ID from filename (format: garak.{uuid}.report.jsonl)
-        const runIdMatch = file.match(/garak\.([^.]+)\.report\.jsonl/);
-        const runId = runIdMatch ? runIdMatch[1] : file;
+        try {
+          const stats = statSync(filePath);
+          
+          // Additional security: ensure it's a file and not too large
+          // Increased limit to 500MB to accommodate larger report files
+          if (!stats.isFile() || stats.size > 500 * 1024 * 1024) {
+            return null;
+          }
         
-        // Get metadata from the report file
-        const { startTime, modelName } = getReportMetadata(filePath);
-        
-        return {
-          filename: file,
-          runId: runId,
-          size: stats.size,
-          startTime: startTime,
-          modelName: modelName
-        };
-      });
+          // Extract run ID from filename (format: garak.{uuid}.report.jsonl)
+          const runIdMatch = file.match(/garak\.([^.]+)\.report\.jsonl/);
+          const runId = runIdMatch ? runIdMatch[1] : file;
+          
+          // Get metadata from the report file
+          const { startTime, modelName } = getReportMetadata(filePath);
+          
+          return {
+            filename: file,
+            runId: runId,
+            size: stats.size,
+            startTime: startTime,
+            modelName: modelName
+          };
+        } catch {
+          // Skip files that can't be processed
+          return null;
+        }
+      })
+      .filter(report => report !== null); // Remove null entries
     
     // Sort by start time (most recent first), fallback to filename if no start time
     reports.sort((a, b) => {
@@ -98,9 +136,9 @@ export async function GET() {
     
     return NextResponse.json({ reports });
   } catch (error) {
-    console.error('Error reading reports directory:', error);
+    const sanitizedError = sanitizeError(error);
     return NextResponse.json(
-      { error: 'Failed to read reports directory' },
+      { error: sanitizedError },
       { status: 500 }
     );
   }

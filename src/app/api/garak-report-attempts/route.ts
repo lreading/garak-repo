@@ -1,16 +1,26 @@
 import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { 
+  validateFilename, 
+  validateReportDirectory, 
+  buildSafeFilePath, 
+  validateFile, 
+  validatePagination,
+  validateFilter,
+  validateCategory,
+  sanitizeError 
+} from '@/lib/security';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const filename = searchParams.get('filename');
     const category = searchParams.get('category');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const filter = searchParams.get('filter') || 'all'; // 'all', 'vulnerable', 'safe'
+    const page = searchParams.get('page');
+    const limit = searchParams.get('limit');
+    const filter = searchParams.get('filter');
     
+    // Validate filename
     if (!filename) {
       return NextResponse.json(
         { error: 'Filename parameter is required' },
@@ -18,36 +28,86 @@ export async function GET(request: Request) {
       );
     }
     
-    if (!category) {
+    const filenameValidation = validateFilename(filename);
+    if (!filenameValidation.isValid) {
       return NextResponse.json(
-        { error: 'Category parameter is required' },
+        { error: filenameValidation.error },
         { status: 400 }
       );
     }
     
-    // Validate filename to prevent directory traversal
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    // Validate category
+    const categoryValidation = validateCategory(category);
+    if (!categoryValidation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid filename' },
+        { error: categoryValidation.error },
         { status: 400 }
       );
     }
     
-    // Read the report file from the configured reports directory
+    // Validate pagination
+    const paginationValidation = validatePagination(page, limit);
+    if (!paginationValidation.isValid) {
+      return NextResponse.json(
+        { error: paginationValidation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Validate filter
+    const filterValidation = validateFilter(filter);
+    if (!filterValidation.isValid) {
+      return NextResponse.json(
+        { error: filterValidation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Validate and sanitize report directory
     const reportDir = process.env.REPORT_DIR || './data';
-    const reportPath = reportDir.startsWith('/') 
-      ? join(reportDir, filename)
-      : join(process.cwd(), reportDir, filename);
-    const reportContent = readFileSync(reportPath, 'utf-8');
+    const dirValidation = validateReportDirectory(reportDir);
+    if (!dirValidation.isValid) {
+      return NextResponse.json(
+        { error: 'Invalid report directory configuration' },
+        { status: 500 }
+      );
+    }
+    
+    // Build safe file path
+    const pathValidation = buildSafeFilePath(reportDir, filename);
+    if (!pathValidation.isValid) {
+      return NextResponse.json(
+        { error: pathValidation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Validate file before reading
+    const fileValidation = validateFile(pathValidation.filePath!);
+    if (!fileValidation.isValid) {
+      return NextResponse.json(
+        { error: fileValidation.error },
+        { status: 404 }
+      );
+    }
+    
+    // Read the report file
+    const reportContent = readFileSync(pathValidation.filePath!, 'utf-8');
     
     // Parse attempts for the specific category with pagination
-    const result = parseCategoryAttempts(reportContent, category, page, limit, filter);
+    const result = parseCategoryAttempts(
+      reportContent, 
+      categoryValidation.category!, 
+      paginationValidation.page!, 
+      paginationValidation.limit!, 
+      filterValidation.filter!
+    );
     
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error reading report attempts:', error);
+    const sanitizedError = sanitizeError(error);
     return NextResponse.json(
-      { error: 'Failed to read report attempts' },
+      { error: sanitizedError },
       { status: 500 }
     );
   }
@@ -59,7 +119,7 @@ interface AttemptResult {
     seq: number;
     status: number;
     probe_classname: string;
-    probe_params: Record<string, any>;
+    probe_params: Record<string, unknown>;
     prompt: {
       turns: Array<{
         role: string;
@@ -113,7 +173,7 @@ function parseCategoryAttempts(
           allAttempts.push(entry);
         }
       }
-    } catch (error) {
+    } catch {
       console.warn('Failed to parse line:', line);
     }
   }
@@ -122,13 +182,13 @@ function parseCategoryAttempts(
   let filteredAttempts = allAttempts;
   if (filter === 'vulnerable') {
     filteredAttempts = allAttempts.filter(attempt => 
-      Object.values(attempt.detector_results || {}).some((scores: any) => 
+      Object.values(attempt.detector_results || {}).some((scores: unknown) => 
         Array.isArray(scores) && scores.some((score: number) => score > 0.5)
       )
     );
   } else if (filter === 'safe') {
     filteredAttempts = allAttempts.filter(attempt => 
-      !Object.values(attempt.detector_results || {}).some((scores: any) => 
+      !Object.values(attempt.detector_results || {}).some((scores: unknown) => 
         Array.isArray(scores) && scores.some((score: number) => score > 0.5)
       )
     );

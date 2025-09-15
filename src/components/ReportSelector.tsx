@@ -63,15 +63,15 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
 
   // Filter and sort reports
   const filteredAndSortedReports = useMemo(() => {
-    let filtered = reports.filter(report =>
+    const filtered = reports.filter(report =>
       report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     filtered.sort((a, b) => {
-      let aValue: any = a[sortField];
-      let bValue: any = b[sortField];
+      let aValue: unknown = a[sortField];
+      let bValue: unknown = b[sortField];
 
       // Handle date fields
       if (sortField === 'startTime') {

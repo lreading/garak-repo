@@ -3,7 +3,7 @@ export interface GarakAttempt {
   seq: number;
   status: number;
   probe_classname: string;
-  probe_params: Record<string, any>;
+  probe_params: Record<string, unknown>;
   prompt: {
     turns: Array<{
       role: string;
@@ -40,7 +40,7 @@ export interface ResponseAnalysis {
 
 export interface GarakReportEntry {
   entry_type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface TestCategory {
@@ -94,7 +94,7 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
   let runId = '';
   let startTime = '';
   let garakVersion = '';
-  let evalData: any = null;
+  let evalData: unknown = null;
 
   // Parse each line
   for (const line of lines) {
@@ -110,7 +110,7 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
       } else if (entry.entry_type === 'digest') {
         evalData = entry;
       }
-    } catch (error) {
+    } catch {
       console.warn('Failed to parse line:', line);
     }
   }
@@ -131,7 +131,7 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
   const vulnerabilityRates: number[] = [];
   
   // First pass: calculate vulnerability rates for Z-score calculation
-  for (const [categoryName, categoryAttempts] of Array.from(categoryMap.entries())) {
+  for (const [, categoryAttempts] of Array.from(categoryMap.entries())) {
     const vulnerableAttempts = categoryAttempts.filter((attempt: GarakAttempt) => 
       Object.values(attempt.detector_results).some((scores: number[]) => 
         scores.some((score: number) => score > 0.5)
@@ -142,11 +142,10 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
   }
   
   // Second pass: create categories with DEFCON grades
-  let categoryIndex = 0;
   for (const [categoryName, categoryAttempts] of Array.from(categoryMap.entries())) {
     const scores = categoryAttempts.flatMap((attempt: GarakAttempt) => 
       Object.values(attempt.detector_results).flat()
-    ).filter((score: any) => typeof score === 'number');
+    ).filter((score: unknown) => typeof score === 'number');
 
     const averageScore = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
     const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
@@ -186,7 +185,6 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
       groupLink
     });
     
-    categoryIndex++;
   }
 
   // Sort categories by total attempts (descending)

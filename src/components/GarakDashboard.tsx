@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GarakReportData, GarakReportMetadata, TestCategory, CategoryMetadata, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis, GarakAttempt } from '@/lib/garak-parser';
+import { GarakReportData, GarakReportMetadata, TestCategory, CategoryMetadata, getScoreColor, getDefconColor, getDefconLabel, analyzeResponses, GarakAttempt } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
 
 interface GarakDashboardProps {
@@ -418,7 +418,7 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
               {/* Attempts List */}
               {!attemptsLoading && (
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {categoryAttempts.map((attempt, index) => (
+                  {categoryAttempts.map((attempt) => (
                   <div key={attempt.uuid} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">

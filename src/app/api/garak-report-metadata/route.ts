@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { 
+  validateFilename, 
+  validateReportDirectory, 
+  buildSafeFilePath, 
+  validateFile, 
+  sanitizeError 
+} from '@/lib/security';
 
 export async function GET(request: Request) {
   try {
@@ -14,29 +20,54 @@ export async function GET(request: Request) {
       );
     }
     
-    // Validate filename to prevent directory traversal
-    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    // Validate filename with comprehensive security checks
+    const filenameValidation = validateFilename(filename);
+    if (!filenameValidation.isValid) {
       return NextResponse.json(
-        { error: 'Invalid filename' },
+        { error: filenameValidation.error },
         { status: 400 }
       );
     }
     
-    // Read the report file from the configured reports directory
+    // Validate and sanitize report directory
     const reportDir = process.env.REPORT_DIR || './data';
-    const reportPath = reportDir.startsWith('/') 
-      ? join(reportDir, filename)
-      : join(process.cwd(), reportDir, filename);
-    const reportContent = readFileSync(reportPath, 'utf-8');
+    const dirValidation = validateReportDirectory(reportDir);
+    if (!dirValidation.isValid) {
+      return NextResponse.json(
+        { error: 'Invalid report directory configuration' },
+        { status: 500 }
+      );
+    }
+    
+    // Build safe file path
+    const pathValidation = buildSafeFilePath(reportDir, filename);
+    if (!pathValidation.isValid) {
+      return NextResponse.json(
+        { error: pathValidation.error },
+        { status: 400 }
+      );
+    }
+    
+    // Validate file before reading
+    const fileValidation = validateFile(pathValidation.filePath!);
+    if (!fileValidation.isValid) {
+      return NextResponse.json(
+        { error: fileValidation.error },
+        { status: 404 }
+      );
+    }
+    
+    // Read the report file
+    const reportContent = readFileSync(pathValidation.filePath!, 'utf-8');
     
     // Parse only the metadata without loading all attempts
     const metadata = parseReportMetadata(reportContent);
     
     return NextResponse.json(metadata);
   } catch (error) {
-    console.error('Error reading report metadata:', error);
+    const sanitizedError = sanitizeError(error);
     return NextResponse.json(
-      { error: 'Failed to read report metadata' },
+      { error: sanitizedError },
       { status: 500 }
     );
   }
@@ -68,7 +99,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
   let startTime = '';
   let garakVersion = '';
   let totalAttempts = 0;
-  let digestData: any = null;
+  let digestData: unknown = null;
   
   // Count attempts by category without loading full data
   const categoryCounts = new Map<string, number>();
@@ -98,7 +129,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
         
         // Collect scores for this category
         if (entry.detector_results && Object.keys(entry.detector_results).length > 0) {
-          const scores = Object.values(entry.detector_results).flat().filter((score: any) => typeof score === 'number');
+          const scores = Object.values(entry.detector_results).flat().filter((score: unknown) => typeof score === 'number');
           if (scores.length > 0) {
             const existingScores = categoryScores.get(categoryName) || [];
             categoryScores.set(categoryName, [...existingScores, ...scores]);
@@ -111,7 +142,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
         
         // Check for vulnerabilities
         if (entry.detector_results && Object.keys(entry.detector_results).length > 0) {
-          const hasVulnerability = Object.values(entry.detector_results).some((scores: any) => 
+          const hasVulnerability = Object.values(entry.detector_results).some((scores: unknown) => 
             Array.isArray(scores) && scores.some((score: number) => score > 0.5)
           );
           if (hasVulnerability) {
@@ -119,7 +150,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
           }
         }
       }
-    } catch (error) {
+    } catch {
       console.warn('Failed to parse line:', line);
     }
   }
