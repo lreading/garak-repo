@@ -8,12 +8,7 @@ interface CategoryCardProps {
 }
 
 export function CategoryCard({ category, onClick }: CategoryCardProps) {
-  const vulnerabilityCount = category.attempts.filter(attempt => 
-    Object.values(attempt.detector_results).some(scores => 
-      scores.some(score => score > 0.5)
-    )
-  ).length;
-
+  const vulnerabilityCount = Math.round((category.vulnerabilityRate / 100) * category.totalAttempts);
   const vulnerabilityRate = category.vulnerabilityRate;
 
   return (

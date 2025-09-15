@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GarakReportData, TestCategory, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis } from '@/lib/garak-parser';
+import { GarakReportData, TestCategory, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis, GarakAttempt } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
 
 interface GarakDashboardProps {
@@ -13,7 +13,44 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<TestCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<'all' | 'vulnerable' | 'safe'>('all');
+  const [categoryAttempts, setCategoryAttempts] = useState<GarakAttempt[]>([]);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPrevPage, setHasPrevPage] = useState(false);
   const router = useRouter();
+
+  // Function to load attempts for a category
+  const loadCategoryAttempts = async (category: TestCategory, page: number = 1, filter: string = 'all') => {
+    setAttemptsLoading(true);
+    try {
+      const searchParams = new URLSearchParams();
+      searchParams.set('filename', 'garak.' + reportData.runId + '.report.jsonl');
+      searchParams.set('category', category.name);
+      searchParams.set('page', page.toString());
+      searchParams.set('limit', '20');
+      searchParams.set('filter', filter);
+      
+      const response = await fetch(`/api/garak-report-attempts?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to load attempts');
+      }
+      
+      const result = await response.json();
+      setCategoryAttempts(result.attempts);
+      setCurrentPage(result.currentPage);
+      setTotalPages(result.totalPages);
+      setTotalCount(result.totalCount);
+      setHasNextPage(result.hasNextPage);
+      setHasPrevPage(result.hasPrevPage);
+    } catch (error) {
+      console.error('Error loading attempts:', error);
+    } finally {
+      setAttemptsLoading(false);
+    }
+  };
 
   const filteredCategories = reportData.categories.filter(category =>
     category.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -21,22 +58,11 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
   );
 
   const totalVulnerabilities = reportData.categories.reduce((sum, cat) => 
-    sum + cat.attempts.filter(attempt => 
-      Object.values(attempt.detector_results).some(scores => 
-        scores.some(score => score > 0.5)
-      )
-    ).length, 0
+    sum + Math.round((cat.vulnerabilityRate / 100) * cat.totalAttempts), 0
   );
 
   const overallVulnerabilityRate = reportData.categories.length > 0 
-    ? reportData.categories.reduce((sum, cat) => {
-        const vulnerableAttempts = cat.attempts.filter(attempt => 
-          Object.values(attempt.detector_results).some(scores => 
-            scores.some(score => score > 0.5)
-          )
-        );
-        return sum + (vulnerableAttempts.length / cat.totalAttempts) * 100;
-      }, 0) / reportData.categories.length
+    ? reportData.categories.reduce((sum, cat) => sum + cat.vulnerabilityRate, 0) / reportData.categories.length
     : 0;
 
 
@@ -136,7 +162,7 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
               </div>
               <div className="ml-4">
                 <div className="text-2xl font-bold text-gray-900">
-                  {reportData.categories.reduce((sum, cat) => sum + cat.attempts.length, 0)}
+                  {reportData.categories.reduce((sum, cat) => sum + cat.totalAttempts, 0)}
                 </div>
                 <div className="text-sm text-gray-600">Total Attempts</div>
               </div>
@@ -169,7 +195,12 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
             <CategoryCard
               key={category.name}
               category={category}
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => {
+                setSelectedCategory(category);
+                setCurrentPage(1);
+                setVulnerabilityFilter('all');
+                loadCategoryAttempts(category, 1, 'all');
+              }}
             />
           ))}
         </div>
@@ -198,6 +229,12 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
                   onClick={() => {
                     setSelectedCategory(null);
                     setVulnerabilityFilter('all');
+                    setCategoryAttempts([]);
+                    setCurrentPage(1);
+                    setTotalPages(0);
+                    setTotalCount(0);
+                    setHasNextPage(false);
+                    setHasPrevPage(false);
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -222,14 +259,7 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-gray-900">
-                    {(() => {
-                      const vulnerableAttempts = selectedCategory.attempts.filter(attempt => 
-                        Object.values(attempt.detector_results).some(scores => 
-                          scores.some(score => score > 0.5)
-                        )
-                      );
-                      return ((vulnerableAttempts.length / selectedCategory.totalAttempts) * 100).toFixed(1);
-                    })()}%
+                    {selectedCategory.vulnerabilityRate.toFixed(1)}%
                   </div>
                   <div className="text-sm text-gray-600">% Vulnerable</div>
                 </div>
@@ -249,7 +279,11 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
                   <span className="text-sm font-medium text-gray-700">Filter by vulnerability:</span>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setVulnerabilityFilter('all')}
+                      onClick={() => {
+                        setVulnerabilityFilter('all');
+                        setCurrentPage(1);
+                        loadCategoryAttempts(selectedCategory, 1, 'all');
+                      }}
                       className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         vulnerabilityFilter === 'all'
                           ? 'bg-blue-100 text-blue-800 border border-blue-200'
@@ -259,98 +293,121 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
                       All ({selectedCategory.totalAttempts})
                     </button>
                     <button
-                      onClick={() => setVulnerabilityFilter('vulnerable')}
+                      onClick={() => {
+                        setVulnerabilityFilter('vulnerable');
+                        setCurrentPage(1);
+                        loadCategoryAttempts(selectedCategory, 1, 'vulnerable');
+                      }}
                       className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         vulnerabilityFilter === 'vulnerable'
                           ? 'bg-red-100 text-red-800 border border-red-200'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      Vulnerable ({selectedCategory.attempts.filter(attempt => 
-                        Object.values(attempt.detector_results).some(scores => 
-                          scores.some(score => score > 0.5)
-                        )
-                      ).length})
+                      Vulnerable ({Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
                     </button>
                     <button
-                      onClick={() => setVulnerabilityFilter('safe')}
+                      onClick={() => {
+                        setVulnerabilityFilter('safe');
+                        setCurrentPage(1);
+                        loadCategoryAttempts(selectedCategory, 1, 'safe');
+                      }}
                       className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         vulnerabilityFilter === 'safe'
                           ? 'bg-green-100 text-green-800 border border-green-200'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      Safe ({selectedCategory.attempts.filter(attempt => 
-                        !Object.values(attempt.detector_results).some(scores => 
-                          scores.some(score => score > 0.5)
-                        )
-                      ).length})
+                      Safe ({selectedCategory.totalAttempts - Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Filtered Results Summary */}
-              {(() => {
-                const filteredAttempts = selectedCategory.attempts.filter(attempt => {
-                  if (vulnerabilityFilter === 'all') return true;
-                  if (vulnerabilityFilter === 'vulnerable') {
-                    return Object.values(attempt.detector_results).some(scores => 
-                      scores.some(score => score > 0.5)
-                    );
-                  }
-                  if (vulnerabilityFilter === 'safe') {
-                    return !Object.values(attempt.detector_results).some(scores => 
-                      scores.some(score => score > 0.5)
-                    );
-                  }
-                  return true;
-                });
-                
-                const vulnerableAttempts = filteredAttempts.filter(attempt => 
-                  Object.values(attempt.detector_results).some(scores => 
-                    scores.some(score => score > 0.5)
-                  )
-                );
-                
-                return (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm font-medium text-blue-900">
-                          Showing {filteredAttempts.length} of {selectedCategory.totalAttempts} attempts
-                        </span>
-                        {vulnerabilityFilter !== 'all' && (
-                          <span className="text-sm text-blue-700 ml-2">
-                            (filtered by {vulnerabilityFilter})
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-blue-700">
-                        {vulnerableAttempts.length} vulnerable attempts in this view
-                      </div>
-                    </div>
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-blue-900">
+                      Showing {categoryAttempts.length} of {totalCount} attempts
+                    </span>
+                    {vulnerabilityFilter !== 'all' && (
+                      <span className="text-sm text-blue-700 ml-2">
+                        (filtered by {vulnerabilityFilter})
+                      </span>
+                    )}
+                    <span className="text-sm text-blue-700 ml-2">
+                      Page {currentPage} of {totalPages}
+                    </span>
                   </div>
-                );
-              })()}
+                  <div className="text-sm text-blue-700">
+                    {categoryAttempts.filter(attempt => 
+                      Object.values(attempt.detector_results || {}).some(scores => 
+                        Array.isArray(scores) && scores.some(score => score > 0.5)
+                      )
+                    ).length} vulnerable attempts in this view
+                  </div>
+                </div>
+              </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {selectedCategory.attempts
-                  .filter(attempt => {
-                    if (vulnerabilityFilter === 'all') return true;
-                    if (vulnerabilityFilter === 'vulnerable') {
-                      return Object.values(attempt.detector_results).some(scores => 
-                        scores.some(score => score > 0.5)
-                      );
-                    }
-                    if (vulnerabilityFilter === 'safe') {
-                      return !Object.values(attempt.detector_results).some(scores => 
-                        scores.some(score => score > 0.5)
-                      );
-                    }
-                    return true;
-                  })
-                  .map((attempt, index) => (
+              {/* Pagination Controls */}
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      if (hasPrevPage) {
+                        const newPage = currentPage - 1;
+                        setCurrentPage(newPage);
+                        loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
+                      }
+                    }}
+                    disabled={!hasPrevPage}
+                    className={`px-3 py-1 rounded text-sm font-medium ${
+                      hasPrevPage
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (hasNextPage) {
+                        const newPage = currentPage + 1;
+                        setCurrentPage(newPage);
+                        loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
+                      }
+                    }}
+                    disabled={!hasNextPage}
+                    className={`px-3 py-1 rounded text-sm font-medium ${
+                      hasNextPage
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {totalCount} total attempts
+                </div>
+              </div>
+
+              {/* Loading State */}
+              {attemptsLoading && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading attempts...</p>
+                </div>
+              )}
+
+              {/* Attempts List */}
+              {!attemptsLoading && (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {categoryAttempts.map((attempt, index) => (
                   <div key={attempt.uuid} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
@@ -466,8 +523,9 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
                       })()}
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

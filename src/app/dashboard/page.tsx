@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { GarakDashboard } from '@/components/GarakDashboard';
-import { parseGarakReport, GarakReportData } from '@/lib/garak-parser';
+import { GarakReportData } from '@/lib/garak-parser';
 
 export default function DashboardPage() {
   const [reportData, setReportData] = useState<GarakReportData | null>(null);
@@ -30,17 +30,16 @@ export default function DashboardPage() {
       }
 
       try {
-        const response = await fetch(`/api/garak-report?filename=${encodeURIComponent(reportFilename)}`, {
+        const response = await fetch(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename)}`, {
           signal: abortController.signal
         });
         
         if (!response.ok) {
-          throw new Error('Failed to load report data');
+          throw new Error('Failed to load report metadata');
         }
         
-        const jsonlContent = await response.text();
-        const parsed = parseGarakReport(jsonlContent);
-        setReportData(parsed);
+        const metadata = await response.json();
+        setReportData(metadata);
       } catch (err) {
         // Don't set error if the request was aborted
         if (err instanceof Error && err.name === 'AbortError') {
