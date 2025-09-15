@@ -185,9 +185,26 @@ export async function GET() {
     
     return NextResponse.json({ reports: sortedReports });
   } catch (error) {
+    console.error('Error in reports API:', error);
     const sanitizedError = sanitizeError(error);
+    
+    // Provide more helpful error messages for common issues
+    let errorMessage = sanitizedError;
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        errorMessage = 'Report directory not found. Please check your volume mount configuration.';
+      } else if (error.message.includes('EACCES')) {
+        errorMessage = 'Permission denied accessing report directory. Please check file permissions.';
+      } else if (error.message.includes('EMFILE') || error.message.includes('ENFILE')) {
+        errorMessage = 'Too many open files. Please check system limits.';
+      }
+    }
+    
     return NextResponse.json(
-      { error: sanitizedError },
+      { 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? sanitizedError : undefined
+      },
       { status: 500 }
     );
   }

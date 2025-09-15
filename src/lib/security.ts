@@ -152,13 +152,21 @@ export function validateReportDirectory(reportDir: string): { isValid: boolean; 
   // Additional strict validation in production
   if (isStrictPathValidationEnabled()) {
     // In strict mode, ensure the directory is within the project root
-    try {
-      const relativePath = relative(projectRoot, realPath);
-      if (relativePath.startsWith('..') || relativePath.includes('..')) {
-        return { isValid: false, error: 'Directory is outside allowed boundaries' };
+    // However, allow absolute paths that are commonly used in containers
+    const allowedAbsolutePaths = ['/data', '/app/data', '/var/log', '/tmp'];
+    const isAllowedAbsolutePath = allowedAbsolutePaths.some(allowedPath => 
+      realPath === allowedPath || realPath.startsWith(allowedPath + '/')
+    );
+    
+    if (!isAllowedAbsolutePath) {
+      try {
+        const relativePath = relative(projectRoot, realPath);
+        if (relativePath.startsWith('..') || relativePath.includes('..')) {
+          return { isValid: false, error: 'Directory is outside allowed boundaries' };
+        }
+      } catch {
+        return { isValid: false, error: 'Cannot validate directory boundaries in strict mode' };
       }
-    } catch {
-      return { isValid: false, error: 'Cannot validate directory boundaries in strict mode' };
     }
   }
 

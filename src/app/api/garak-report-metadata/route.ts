@@ -220,7 +220,8 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
     const defconGrade = calculateDefconGrade(vulnerabilityRate);
     
     // Extract group link from digest data
-    const groupLink = digestData?.eval?.[categoryName]?._summary?.group_link;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupLink = (digestData as any)?.eval?.[categoryName]?._summary?.group_link;
     
     categories.push({
       name: categoryName,

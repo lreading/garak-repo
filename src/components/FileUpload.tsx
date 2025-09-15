@@ -231,7 +231,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
         
         {showNewFolderInput && (
           <form 
-            onSubmit={(e) => { e.preventDefault(); handleCreateFolder(e); }} 
+            onSubmit={(e) => { e.preventDefault(); handleCreateFolder(); }} 
             onClick={(e) => e.stopPropagation()}
             className="mt-2 flex items-center space-x-2"
           >

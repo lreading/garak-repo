@@ -60,6 +60,50 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Docker Deployment
+
+You can also run the application using Docker:
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t garak-repository .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -p 3000:3000 -v /path/to/your/reports:/app/data garak-repository
+   ```
+
+   Replace `/path/to/your/reports` with the actual path to your Garak report files.
+
+3. **Using environment variables:**
+   ```bash
+   docker run -p 3000:3000 \
+     -v /path/to/your/reports:/app/data \
+     -e REPORT_DIR=/app/data \
+     garak-repository
+   ```
+
+The Docker container will:
+- Serve the application on port 3000
+- Mount your report directory to `/app/data` inside the container
+- Automatically detect and serve your Garak report files
+
+4. **Using Docker Compose (recommended):**
+   
+   First, update the volume path in `docker-compose.yml` to point to your reports directory:
+   ```yaml
+   volumes:
+     - /path/to/your/reports:/app/data
+   ```
+   
+   Then run:
+   ```bash
+   docker-compose up -d
+   ```
+   
+   This will build and start the container in the background with health checks enabled.
+
 ## Environment Variables
 
 The following environment variables can be configured:

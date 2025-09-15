@@ -102,9 +102,9 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
       const entry: GarakReportEntry = JSON.parse(line);
       
       if (entry.entry_type === 'init') {
-        runId = entry.run || '';
-        startTime = entry.start_time || '';
-        garakVersion = entry.garak_version || '';
+        runId = (entry.run as string) || '';
+        startTime = (entry.start_time as string) || '';
+        garakVersion = (entry.garak_version as string) || '';
       } else if (entry.entry_type === 'attempt') {
         attempts.push(entry as unknown as GarakAttempt);
       } else if (entry.entry_type === 'digest') {
@@ -168,7 +168,8 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
     const defconGrade = calculateDefconGrade(vulnerabilityRate);
 
     // Extract group link from digest data
-    const groupLink = evalData?.eval?.[categoryName]?._summary?.group_link;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupLink = (evalData as any)?.eval?.[categoryName]?._summary?.group_link;
 
     categories.push({
       name: categoryName,
