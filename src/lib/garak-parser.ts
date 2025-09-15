@@ -227,7 +227,7 @@ export function getDefconColor(grade: number): string {
     case 5: return 'text-green-800 bg-green-100 border-green-300';
     case 4: return 'text-blue-800 bg-blue-100 border-blue-300';
     case 3: return 'text-yellow-800 bg-yellow-100 border-yellow-300';
-    case 2: return 'text-orange-800 bg-orange-100 border-orange-300';
+    case 2: return 'text-gray-900 bg-orange-100 border-orange-300';
     case 1: return 'text-red-800 bg-red-100 border-red-300';
     default: return 'text-gray-800 bg-gray-100 border-gray-300';
   }
