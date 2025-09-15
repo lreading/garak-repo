@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { GarakReportData, TestCategory, getScoreColor, getSuccessRateColor, getDefconColor, getDefconLabel, analyzeResponses, ResponseAnalysis } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
 
@@ -12,6 +13,7 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<TestCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<'all' | 'vulnerable' | 'safe'>('all');
+  const router = useRouter();
 
   const filteredCategories = reportData.categories.filter(category =>
     category.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,6 +47,17 @@ export function GarakDashboard({ reportData }: GarakDashboardProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
+              <div className="flex items-center space-x-4 mb-2">
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Reports
+                </button>
+              </div>
               <h1 className="text-3xl font-bold text-gray-900">Garak Report Visualizer</h1>
               <p className="mt-2 text-gray-600">
                 Run ID: {reportData.runId} | Version: {reportData.garakVersion}

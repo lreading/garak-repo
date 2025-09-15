@@ -2,10 +2,28 @@ import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const filename = searchParams.get('filename');
+    
+    if (!filename) {
+      return NextResponse.json(
+        { error: 'Filename parameter is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate filename to prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return NextResponse.json(
+        { error: 'Invalid filename' },
+        { status: 400 }
+      );
+    }
+    
     // Read the report file from the data directory
-    const reportPath = join(process.cwd(), '..', 'data', 'garak.eb4baeec-454d-4c7f-b9de-7382955f0d44.report.jsonl');
+    const reportPath = join(process.cwd(), 'data', filename);
     const reportContent = readFileSync(reportPath, 'utf-8');
     
     return new NextResponse(reportContent, {
