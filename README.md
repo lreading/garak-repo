@@ -91,3 +91,15 @@ The key benefit of this repository is the ability to drill down into specific at
    - Make informed decisions about security posture
 
 This detailed analysis capability helps you understand not just that vulnerabilities were found, but exactly what went wrong and whether the detections are accurate.
+
+## Screenshots
+
+### Report Selection Interface
+The main interface allows you to browse and select from your stored Garak reports, with folder organization and search capabilities.
+
+![Report Selection Interface](screenshots/report-selection.png)
+
+### Detailed Analysis Dashboard
+Once you select a report, you can view comprehensive statistics and drill down into specific vulnerability categories to examine individual attempts and responses.
+
+![Analysis Dashboard](screenshots/analysis-dashboard.png)

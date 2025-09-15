@@ -86,7 +86,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                 </button>
               </div>
               
-              <h1 className="text-2xl font-bold text-gray-900">Garak Report Visualizer</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Garak Repository</h1>
               
               {/* File Path Breadcrumb */}
               <div className="mt-2">
