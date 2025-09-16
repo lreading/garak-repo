@@ -33,64 +33,37 @@ View the attempts and responses that happened during the testing.  Filter by vul
 
 ## Getting Started
 
-### Environment Setup
+### Running with Docker (Recommended)
 
-1. Copy the example environment file:
+The easiest way to get started is using the pre-built Docker image:
+
+1. **Pull the latest image:**
    ```bash
-   cp example.env .env
-   ```
-
-2. Configure the `REPORT_DIR` environment variable in your `.env` file:
-   ```bash
-   # Directory where Garak report files are stored
-   REPORT_DIR=./data
-   ```
-
-   **Path handling:**
-   - **Relative paths** (like `./data`, `../reports`) are resolved from the project root
-   - **Absolute paths** (starting with `/`) are used as-is
-
-### Running the Application
-
-First, run the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-### Docker Deployment
-
-You can also run the application using Docker:
-
-1. **Build the Docker image:**
-   ```bash
-   docker build -t garak-repository .
+   docker pull nerdyhick/garak-repo:latest
    ```
 
 2. **Run the container:**
    ```bash
-   docker run -p 3000:3000 -v /path/to/your/reports:/app/data garak-repository
+   docker run -p 3000:3000 -v /path/to/your/reports:/app/data nerdyhick/garak-repo:latest
    ```
 
    Replace `/path/to/your/reports` with the actual path to your Garak report files.
 
-3. **Using environment variables:**
-   ```bash
-   docker run -p 3000:3000 \
-     -v /path/to/your/reports:/app/data \
-     -e REPORT_DIR=/app/data \
-     garak-repository
-   ```
+   **Note:** The container defaults to using `/app/data` as the report directory (mapped from `REPORT_DIR=./data`).  You can change this by adding `-e REPORT_DIR=<some-directory-in-the-container>`
 
-4. **Run in detached mode (background):**
+3. **Run in detached mode (background):**
    ```bash
    docker run -d -p 3000:3000 \
      -v /path/to/your/reports:/app/data \
-     -e "REPORT_DIR=/app/data" \
      --name garak-repo \
-     garak-repository
+     nerdyhick/garak-repo:latest
+   ```
+
+4. **Using a specific version:**
+   ```bash
+   docker run -p 3000:3000 \
+     -v /path/to/your/reports:/app/data \
+     nerdyhick/garak-repo:0.0.1
    ```
 
 5. **Stop the container:**
@@ -108,6 +81,50 @@ The Docker container will:
 - Mount your report directory to `/app/data` inside the container
 - Automatically detect and serve your Garak report files
 - Run in standalone mode for optimal performance
+
+### Running Locally (Development)
+
+For development or if you prefer to run the application locally:
+
+1. **Prerequisites:**
+   - Node.js 18 or later
+   - npm or yarn
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup:**
+   
+   Copy the example environment file:
+   ```bash
+   cp example.env .env
+   ```
+
+   Configure the `REPORT_DIR` environment variable in your `.env` file:
+   ```bash
+   # Directory where Garak report files are stored
+   REPORT_DIR=./data
+   ```
+
+   **Path handling:**
+   - **Relative paths** (like `./data`, `../reports`) are resolved from the project root
+   - **Absolute paths** (starting with `/`) are used as-is
+
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser:**
+   Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
+
+6. **Build for production:**
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ## Environment Variables
 
