@@ -26,6 +26,8 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
   // Function to load attempts for a category
   const loadCategoryAttempts = async (category: TestCategory | CategoryMetadata, page: number = 1, filter: string = 'all') => {
     setAttemptsLoading(true);
+    // Clear attempts at the start of loading to prevent duplicate keys
+    setCategoryAttempts([]);
     try {
       const searchParams = new URLSearchParams();
       searchParams.set('filename', filename);
@@ -460,8 +462,8 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
               {/* Attempts List */}
               {!attemptsLoading && (
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {categoryAttempts.map((attempt) => (
-                  <div key={attempt.uuid} className="border rounded-lg p-4">
+                  {categoryAttempts.map((attempt, index) => (
+                  <div key={`${selectedCategory?.name}-${index}-${attempt.uuid}-${attempt.seq}`} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
                         <h4 className="font-medium text-gray-900">Attempt #{attempt.seq}</h4>
@@ -565,7 +567,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-gray-700 max-h-16 overflow-y-auto">
+                                  <div className="text-gray-700">
                                     {response.text}
                                   </div>
                                 </div>
