@@ -268,7 +268,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                     <h3 className="text-lg font-medium text-gray-900">
                       {selectedCategory.displayName}
                     </h3>
-                    {selectedCategory.groupLink && (
+                    {selectedCategory.groupLink ? (
                       <a
                         href={selectedCategory.groupLink}
                         target="_blank"
@@ -279,6 +279,18 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                         <span>View Documentation</span>
+                      </a>
+                    ) : (
+                      <a
+                        href="https://reference.garak.ai/en/latest/garak.probes.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <svg className="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span>Garak Documentation</span>
                       </a>
                     )}
                   </div>
