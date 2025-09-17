@@ -259,209 +259,214 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
       {/* Category Detail Modal */}
       {selectedCategory && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {selectedCategory.displayName}
-                  </h3>
-                  {selectedCategory.groupLink && (
-                    <a
-                      href={selectedCategory.groupLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center text-sm text-green-600 hover:text-green-800 transition-colors"
-                    >
-                      <svg className="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      <span>View Documentation</span>
-                    </a>
-                  )}
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setVulnerabilityFilter('all');
-                    setCategoryAttempts([]);
-                    setCurrentPage(1);
-                    setTotalPages(0);
-                    setTotalCount(0);
-                    setHasNextPage(false);
-                    setHasPrevPage(false);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-gray-900">{selectedCategory.totalAttempts}</div>
-                  <div className="text-sm text-gray-600">Total Attempts</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-gray-900">{selectedCategory.averageScore.toFixed(3)}</div>
-                  <div className="text-sm text-gray-600">Average Score</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-gray-900">{selectedCategory.maxScore.toFixed(3)}</div>
-                  <div className="text-sm text-gray-600">Max Score</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-gray-900">
-                    {selectedCategory.vulnerabilityRate.toFixed(1)}%
-                  </div>
-                  <div className="text-sm text-gray-600">% Vulnerable</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-gray-900">
-                    <span className={`px-2 py-1 rounded text-sm font-medium ${getDefconColor(selectedCategory.defconGrade)}`}>
-                      {getDefconLabel(selectedCategory.defconGrade)}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1">Z-Score: {selectedCategory.zScore.toFixed(2)}</div>
-                </div>
-              </div>
-
-              {/* Vulnerability Filter */}
-              <div className="mb-6">
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Filter by vulnerability:</span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setVulnerabilityFilter('all');
-                        setCurrentPage(1);
-                        loadCategoryAttempts(selectedCategory, 1, 'all');
-                      }}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                        vulnerabilityFilter === 'all'
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      All ({selectedCategory.totalAttempts})
-                    </button>
-                    <button
-                      onClick={() => {
-                        setVulnerabilityFilter('vulnerable');
-                        setCurrentPage(1);
-                        loadCategoryAttempts(selectedCategory, 1, 'vulnerable');
-                      }}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                        vulnerabilityFilter === 'vulnerable'
-                          ? 'bg-red-100 text-red-800 border border-red-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Vulnerable ({Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
-                    </button>
-                    <button
-                      onClick={() => {
-                        setVulnerabilityFilter('safe');
-                        setCurrentPage(1);
-                        loadCategoryAttempts(selectedCategory, 1, 'safe');
-                      }}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                        vulnerabilityFilter === 'safe'
-                          ? 'bg-green-100 text-green-800 border border-green-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Safe ({selectedCategory.totalAttempts - Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Filtered Results Summary */}
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-medium text-blue-900">
-                      Showing {categoryAttempts.length} of {totalCount} attempts
-                    </span>
-                    {vulnerabilityFilter !== 'all' && (
-                      <span className="text-sm text-blue-700 ml-2">
-                        (filtered by {vulnerabilityFilter})
-                      </span>
+          <div className="relative top-4 mx-auto p-4 border w-11/12 max-w-7xl shadow-lg rounded-md bg-white max-h-[95vh] flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Header Section */}
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-4">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {selectedCategory.displayName}
+                    </h3>
+                    {selectedCategory.groupLink && (
+                      <a
+                        href={selectedCategory.groupLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-sm text-green-600 hover:text-green-800 transition-colors"
+                      >
+                        <svg className="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span>View Documentation</span>
+                      </a>
                     )}
-                    <span className="text-sm text-blue-700 ml-2">
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory(null);
+                      setVulnerabilityFilter('all');
+                      setCategoryAttempts([]);
+                      setCurrentPage(1);
+                      setTotalPages(0);
+                      setTotalCount(0);
+                      setHasNextPage(false);
+                      setHasPrevPage(false);
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-gray-900">{selectedCategory.totalAttempts}</div>
+                    <div className="text-xs text-gray-600">Total Attempts</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-gray-900">{selectedCategory.averageScore.toFixed(3)}</div>
+                    <div className="text-xs text-gray-600">Average Score</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-gray-900">{selectedCategory.maxScore.toFixed(3)}</div>
+                    <div className="text-xs text-gray-600">Max Score</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-gray-900">
+                      {selectedCategory.vulnerabilityRate.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-gray-600">% Vulnerable</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-lg font-bold text-gray-900">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getDefconColor(selectedCategory.defconGrade)}`}>
+                        {getDefconLabel(selectedCategory.defconGrade)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">Z-Score: {selectedCategory.zScore.toFixed(2)}</div>
+                  </div>
+                </div>
+
+                {/* Vulnerability Filter */}
+                <div className="mb-4">
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium text-gray-700">Filter by vulnerability:</span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => {
+                          setVulnerabilityFilter('all');
+                          setCurrentPage(1);
+                          loadCategoryAttempts(selectedCategory, 1, 'all');
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          vulnerabilityFilter === 'all'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        All ({selectedCategory.totalAttempts})
+                      </button>
+                      <button
+                        onClick={() => {
+                          setVulnerabilityFilter('vulnerable');
+                          setCurrentPage(1);
+                          loadCategoryAttempts(selectedCategory, 1, 'vulnerable');
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          vulnerabilityFilter === 'vulnerable'
+                            ? 'bg-red-100 text-red-800 border border-red-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Vulnerable ({Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
+                      </button>
+                      <button
+                        onClick={() => {
+                          setVulnerabilityFilter('safe');
+                          setCurrentPage(1);
+                          loadCategoryAttempts(selectedCategory, 1, 'safe');
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                          vulnerabilityFilter === 'safe'
+                            ? 'bg-green-100 text-green-800 border border-green-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Safe ({selectedCategory.totalAttempts - Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filtered Results Summary */}
+                <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-blue-900">
+                        Showing {categoryAttempts.length} of {totalCount} attempts
+                      </span>
+                      {vulnerabilityFilter !== 'all' && (
+                        <span className="text-sm text-blue-700 ml-2">
+                          (filtered by {vulnerabilityFilter})
+                        </span>
+                      )}
+                      <span className="text-sm text-blue-700 ml-2">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                    </div>
+                    <div className="text-sm text-blue-700">
+                      {categoryAttempts.filter(attempt => 
+                        Object.values(attempt.detector_results || {}).some(scores => 
+                          Array.isArray(scores) && scores.some(score => score > 0.5)
+                        )
+                      ).length} vulnerable attempts in this view
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        if (hasPrevPage) {
+                          const newPage = currentPage - 1;
+                          setCurrentPage(newPage);
+                          loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
+                        }
+                      }}
+                      disabled={!hasPrevPage}
+                      className={`px-3 py-1 rounded text-sm font-medium ${
+                        hasPrevPage
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <span className="text-sm text-gray-600">
                       Page {currentPage} of {totalPages}
                     </span>
+                    <button
+                      onClick={() => {
+                        if (hasNextPage) {
+                          const newPage = currentPage + 1;
+                          setCurrentPage(newPage);
+                          loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
+                        }
+                      }}
+                      disabled={!hasNextPage}
+                      className={`px-3 py-1 rounded text-sm font-medium ${
+                        hasNextPage
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Next
+                    </button>
                   </div>
-                  <div className="text-sm text-blue-700">
-                    {categoryAttempts.filter(attempt => 
-                      Object.values(attempt.detector_results || {}).some(scores => 
-                        Array.isArray(scores) && scores.some(score => score > 0.5)
-                      )
-                    ).length} vulnerable attempts in this view
+                  <div className="text-sm text-gray-600">
+                    {totalCount} total attempts
                   </div>
                 </div>
               </div>
 
-              {/* Pagination Controls */}
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      if (hasPrevPage) {
-                        const newPage = currentPage - 1;
-                        setCurrentPage(newPage);
-                        loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
-                      }
-                    }}
-                    disabled={!hasPrevPage}
-                    className={`px-3 py-1 rounded text-sm font-medium ${
-                      hasPrevPage
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  <span className="text-sm text-gray-600">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (hasNextPage) {
-                        const newPage = currentPage + 1;
-                        setCurrentPage(newPage);
-                        loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
-                      }
-                    }}
-                    disabled={!hasNextPage}
-                    className={`px-3 py-1 rounded text-sm font-medium ${
-                      hasNextPage
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="text-sm text-gray-600">
-                  {totalCount} total attempts
-                </div>
-              </div>
+              {/* Content Area */}
+              <div className="flex-1 flex flex-col min-h-0">
+                {/* Loading State */}
+                {attemptsLoading && (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading attempts...</p>
+                  </div>
+                )}
 
-              {/* Loading State */}
-              {attemptsLoading && (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Loading attempts...</p>
-                </div>
-              )}
-
-              {/* Attempts List */}
-              {!attemptsLoading && (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                {/* Attempts List */}
+                {!attemptsLoading && (
+                  <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
                   {categoryAttempts.map((attempt, index) => (
                   <div key={`${selectedCategory?.name}-${index}-${attempt.uuid}-${attempt.seq}`} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -579,8 +584,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                     </div>
                   </div>
                   ))}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
