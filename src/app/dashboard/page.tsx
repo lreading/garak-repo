@@ -2,7 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { GarakDashboard } from '@/components/GarakDashboard';
+import { UserProfile } from '@/components/UserProfile';
 import { GarakReportMetadata } from '@/lib/garak-parser';
 
 function DashboardContent() {
@@ -11,6 +13,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session, status } = useSession();
   
   const reportFilename = searchParams.get('report');
 
@@ -125,7 +128,26 @@ function DashboardContent() {
     );
   }
 
-  return <GarakDashboard reportData={reportData} filename={reportFilename!} />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Garak Report Analysis
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Analyzing report: {reportFilename}
+              </p>
+            </div>
+            <UserProfile className="max-w-sm" />
+          </div>
+        </div>
+        <GarakDashboard reportData={reportData} filename={reportFilename!} />
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {

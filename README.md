@@ -14,6 +14,7 @@ A comprehensive repository and analysis tool for storing, organizing, and analyz
 - **False Positive Detection**: Analyze detector results and responses to identify potential false positives
 - **Search & Filter**: Search through test categories and filter attempts by vulnerability status
 - **Detailed Response Analysis**: View full prompts, responses, and detector scores for each attempt
+- **🔐 OIDC Authentication**: Secure access with OpenID Connect integration supporting automated service discovery for various providers (Okta, Google, Azure AD, Auth0, Keycloak, AWS Cognito, and more)
 
 ## Screenshots
 
@@ -101,18 +102,32 @@ For development or if you prefer to run the application locally:
    
    Copy the example environment file:
    ```bash
-   cp example.env .env
+   cp example.env .env.local
    ```
 
-   Configure the `REPORT_DIR` environment variable in your `.env` file:
+   Configure the required environment variables in your `.env.local` file:
    ```bash
    # Directory where Garak report files are stored
    REPORT_DIR=./data
+   
+   # OIDC Authentication (Required)
+   OIDC_ISSUER=https://your-oidc-provider.com
+   OIDC_CLIENT_ID=your-client-id
+   OIDC_CLIENT_SECRET=your-client-secret
+   OIDC_PROVIDER_NAME=Your Provider Name
+   
+   # NextAuth Configuration
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your-secret-key-here
    ```
 
    **Path handling:**
    - **Relative paths** (like `./data`, `../reports`) are resolved from the project root
    - **Absolute paths** (starting with `/`) are used as-is
+   
+   **OIDC Configuration:**
+   - See [OIDC_SETUP.md](OIDC_SETUP.md) for detailed configuration instructions
+   - Supports automated service discovery for various providers
 
 4. **Run the development server:**
    ```bash
@@ -132,7 +147,9 @@ For development or if you prefer to run the application locally:
 
 The following environment variables can be configured:
 
-### `REPORT_DIR`
+### Report Storage
+
+#### `REPORT_DIR`
 - **Description**: Directory where Garak report files are stored
 - **Default**: `./data`
 - **Examples**: 
@@ -141,6 +158,25 @@ The following environment variables can be configured:
 - **Path handling**: 
   - Relative paths are resolved from the project root
   - Absolute paths (starting with `/`) are used as-is
+
+### OIDC Authentication
+
+#### Required Variables
+- **`OIDC_ISSUER`**: OIDC provider issuer URL (e.g., `https://your-provider.com`)
+- **`OIDC_CLIENT_ID`**: OAuth client ID from your provider
+- **`OIDC_CLIENT_SECRET`**: OAuth client secret from your provider
+
+#### Optional Variables
+- **`OIDC_PROVIDER_NAME`**: Display name for the provider (default: "OIDC Provider")
+- **`OIDC_SCOPES`**: Requested scopes (default: `openid,profile,email`)
+- **`OIDC_USE_PKCE`**: Enable PKCE for security (default: `true`)
+- **`OIDC_MAX_AGE`**: Session max age in seconds (default: `3600`)
+
+#### NextAuth Variables
+- **`NEXTAUTH_URL`**: Application URL (e.g., `http://localhost:3000`)
+- **`NEXTAUTH_SECRET`**: Secret for JWT signing (generate a strong random string)
+
+For detailed OIDC configuration instructions and provider-specific examples, see [OIDC_SETUP.md](OIDC_SETUP.md).
 
 ## Usage
 
