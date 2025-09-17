@@ -98,7 +98,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   {filename.includes('/') ? (
                     <>
                       {filename.split('/').map((part, index, array) => (
-                        <span key={index} className="flex items-center">
+                        <span key={`breadcrumb-${part}-${index}`} className="flex items-center">
                           <svg className="w-3 h-3 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
@@ -512,7 +512,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                               <div className="flex space-x-1">
                                 {scores.map((score, i) => (
                                   <span
-                                    key={i}
+                                    key={`${attempt.uuid}-${detector}-score-${i}`}
                                     className={`px-2 py-1 rounded text-xs font-medium ${getScoreColor(score)}`}
                                     title={`Generation ${i + 1}: ${score.toFixed(3)}`}
                                   >
@@ -543,7 +543,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                             <div className="space-y-2">
                               {responses.map((response, index) => (
                                 <div
-                                  key={index}
+                                  key={`${attempt.uuid}-response-${index}`}
                                   className={`p-2 rounded text-sm ${
                                     response.isVulnerable
                                       ? 'bg-red-50 border border-red-200'
