@@ -14,6 +14,7 @@ A comprehensive repository and analysis tool for storing, organizing, and analyz
 - **False Positive Detection**: Analyze detector results and responses to identify potential false positives
 - **Search & Filter**: Search through test categories and filter attempts by vulnerability status
 - **Detailed Response Analysis**: View full prompts, responses, and detector scores for each attempt
+- **🔐 OIDC Authentication**: Secure access with OpenID Connect integration supporting automated service discovery for various providers (Okta, Google, Azure AD, Auth0, Keycloak, AWS Cognito, and more)
 
 ## Screenshots
 
@@ -46,10 +47,11 @@ The easiest way to get started is using the pre-built Docker image:
 
 2. **Run the container:**
    ```bash
-   docker run -p 3000:3000 -v /path/to/your/reports:/app/data nerdyhick/garak-repo:latest
+   docker run -p 3000:3000 -e "OIDC_ENABLED=false" -v /path/to/your/reports:/app/data nerdyhick/garak-repo:latest
    ```
 
    Replace `/path/to/your/reports` with the actual path to your Garak report files.
+   In production, it is strongly recommended to configure an OIDC provider via your IDP.
 
    **Note:** The container defaults to using `/app/data` as the report directory (mapped from `REPORT_DIR=./data`).  You can change this by adding `-e REPORT_DIR=<some-directory-in-the-container>`
 
@@ -57,6 +59,7 @@ The easiest way to get started is using the pre-built Docker image:
    ```bash
    docker run -d -p 3000:3000 \
      -v /path/to/your/reports:/app/data \
+     -e "OIDC_ENABLED=false" \
      --name garak-repo \
      nerdyhick/garak-repo:latest
    ```
@@ -65,6 +68,7 @@ The easiest way to get started is using the pre-built Docker image:
    ```bash
    docker run -p 3000:3000 \
      -v /path/to/your/reports:/app/data \
+     -e "OIDC_ENABLED=false" \
      nerdyhick/garak-repo:0.0.1
    ```
 
@@ -104,15 +108,34 @@ For development or if you prefer to run the application locally:
    cp example.env .env
    ```
 
-   Configure the `REPORT_DIR` environment variable in your `.env` file:
+   Configure the required environment variables in your `.env` file:
    ```bash
    # Directory where Garak report files are stored
    REPORT_DIR=./data
+   
+   # Set to false to disabled authentication
+   OIDC_ENABLED=true
+
+   # OIDC Authentication (Optional)
+   OIDC_ISSUER=https://your-oidc-provider.com
+   OIDC_CLIENT_ID=your-client-id
+   OIDC_CLIENT_SECRET=your-client-secret
+   OIDC_PROVIDER_NAME=Your Provider Name
+   
+   # NextAuth Configuration (Required if OIDC_ENABLED=true)
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your-secret-key-here
    ```
 
    **Path handling:**
    - **Relative paths** (like `./data`, `../reports`) are resolved from the project root
    - **Absolute paths** (starting with `/`) are used as-is
+   
+   **OIDC Configuration:**
+   - See [OIDC_SETUP.md](OIDC_SETUP.md) for detailed configuration instructions
+   - Supports automated service discovery for various providers
+
+   **⚠️ Important:** When changing the `OIDC_ENABLED` environment variable, you must restart the development server for the changes to take effect. Next.js does not automatically reload environment variables on hot reload.
 
 4. **Run the development server:**
    ```bash
@@ -132,7 +155,9 @@ For development or if you prefer to run the application locally:
 
 The following environment variables can be configured:
 
-### `REPORT_DIR`
+### Report Storage
+
+#### `REPORT_DIR` (Optional)
 - **Description**: Directory where Garak report files are stored
 - **Default**: `./data`
 - **Examples**: 
@@ -141,6 +166,28 @@ The following environment variables can be configured:
 - **Path handling**: 
   - Relative paths are resolved from the project root
   - Absolute paths (starting with `/`) are used as-is
+
+### OIDC Authentication (Optional)
+
+#### Disable Auth Entirely
+- **`OIDC_ENABLED`**: Turns authentication on or off (true/false)
+
+#### Required Variables for OIDC
+- **`OIDC_ISSUER`**: OIDC provider issuer URL (e.g., `https://your-provider.com`)
+- **`OIDC_CLIENT_ID`**: OAuth client ID from your provider
+- **`OIDC_CLIENT_SECRET`**: OAuth client secret from your provider
+
+#### Optional Variables for OIDC
+- **`OIDC_PROVIDER_NAME`**: Display name for the provider (default: "OIDC Provider")
+- **`OIDC_SCOPES`**: Requested scopes (default: `openid,profile,email`)
+- **`OIDC_USE_PKCE`**: Enable PKCE for security (default: `true`)
+- **`OIDC_MAX_AGE`**: Session max age in seconds (default: `3600`)
+
+#### NextAuth Variables (Required if OIDC_ENABLED=true)
+- **`NEXTAUTH_URL`**: Application URL (e.g., `http://localhost:3000`)
+- **`NEXTAUTH_SECRET`**: Secret for JWT signing (generate a strong random string)
+
+For detailed OIDC configuration instructions and provider-specific examples, see [OIDC_SETUP.md](OIDC_SETUP.md).
 
 ## Usage
 

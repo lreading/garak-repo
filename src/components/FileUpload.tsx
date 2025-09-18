@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { apiJson } from '@/lib/api-client';
 
 interface FileUploadProps {
   onUploadSuccess?: (filename: string) => void;
@@ -36,11 +37,8 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
   useEffect(() => {
     const loadFolders = async () => {
       try {
-        const response = await fetch('/api/folders');
-        if (response.ok) {
-          const data = await response.json();
-          setFolders(data.folders || []);
-        }
+        const data = await apiJson<{ folders: Folder[] }>('/api/folders');
+        setFolders(data.folders || []);
       } catch (err) {
         console.error('Failed to load folders:', err);
       } finally {
@@ -90,16 +88,10 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
         formData.append('folderPath', selectedFolder);
       }
 
-      const response = await fetch('/api/upload-report', {
+      const result = await apiJson<{ filename: string }>('/api/upload-report', {
         method: 'POST',
         body: formData,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Upload failed');
-      }
 
       // Upload successful
       setUploadProgress({ uploading: false, progress: 100, filename: selectedFile.name });

@@ -2,8 +2,11 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { GarakDashboard } from '@/components/GarakDashboard';
+import { LogoutButton } from '@/components/LogoutButton';
 import { GarakReportMetadata } from '@/lib/garak-parser';
+import { apiJson } from '@/lib/api-client';
 
 function DashboardContent() {
   const [reportData, setReportData] = useState<GarakReportMetadata | null>(null);
@@ -11,6 +14,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  useAuth(); // Check authentication status
   
   const reportFilename = searchParams.get('report');
 
@@ -30,15 +34,9 @@ function DashboardContent() {
       }
 
       try {
-        const response = await fetch(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename)}`, {
+        const metadata = await apiJson<GarakReportMetadata>(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename)}`, {
           signal: abortController.signal
         });
-        
-        if (!response.ok) {
-          throw new Error('Failed to load report metadata');
-        }
-        
-        const metadata = await response.json();
         setReportData(metadata);
       } catch (err) {
         // Don't set error if the request was aborted
@@ -125,7 +123,26 @@ function DashboardContent() {
     );
   }
 
-  return <GarakDashboard reportData={reportData} filename={reportFilename!} />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Garak Report Analysis
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Analyzing report: {reportFilename}
+              </p>
+            </div>
+            <LogoutButton />
+          </div>
+        </div>
+        <GarakDashboard reportData={reportData} filename={reportFilename!} />
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {

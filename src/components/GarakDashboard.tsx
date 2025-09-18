@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GarakReportData, GarakReportMetadata, TestCategory, CategoryMetadata, getScoreColor, getDefconColor, getDefconLabel, analyzeResponses, GarakAttempt } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
+import { apiJson } from '@/lib/api-client';
 
 interface GarakDashboardProps {
   reportData: GarakReportData | GarakReportMetadata;
@@ -36,12 +37,14 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
       searchParams.set('limit', '20');
       searchParams.set('filter', filter);
       
-      const response = await fetch(`/api/garak-report-attempts?${searchParams.toString()}`);
-      if (!response.ok) {
-        throw new Error('Failed to load attempts');
-      }
-      
-      const result = await response.json();
+      const result = await apiJson<{
+        attempts: GarakAttempt[];
+        currentPage: number;
+        totalPages: number;
+        totalCount: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      }>(`/api/garak-report-attempts?${searchParams.toString()}`);
       setCategoryAttempts(result.attempts);
       setCurrentPage(result.currentPage);
       setTotalPages(result.totalPages);
