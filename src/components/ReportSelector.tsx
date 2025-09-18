@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadModal } from './UploadModal';
+import { LogoutButton } from './LogoutButton';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Report {
   filename: string;
@@ -34,6 +36,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const router = useRouter();
+  const { isAuthenticated, isOIDCEnabled } = useAuth();
 
   const updateReportsState = useCallback((reports: Report[], error: string | null = null) => {
     setReports(reports);
@@ -267,6 +270,9 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
               >
                 Upload Report
               </button>
+              {isAuthenticated && isOIDCEnabled && (
+                <LogoutButton />
+              )}
             </div>
           </div>
         </div>

@@ -2,11 +2,10 @@
 
 import { ReportSelector } from '@/components/ReportSelector';
 import { LoginButton } from '@/components/LoginButton';
-import { UserProfile } from '@/components/UserProfile';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { data: session, status, isAuthenticated, isOIDCEnabled } = useAuth();
 
   if (status === 'loading') {
     return (
@@ -19,7 +18,7 @@ export default function Home() {
     );
   }
 
-  if (!session) {
+  if (!isAuthenticated && isOIDCEnabled) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -50,19 +49,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Garak Report Dashboard
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Welcome back!
-              </p>
-            </div>
-            <UserProfile className="max-w-sm" />
-          </div>
-        </div>
         <ReportSelector />
       </div>
     </div>

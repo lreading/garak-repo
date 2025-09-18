@@ -8,11 +8,32 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequestWithAuth } from 'next-auth/middleware';
+import { isOIDCEnabled } from './lib/config';
 
 export default withAuth(
   function middleware(req: NextRequestWithAuth) {
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
+
+    // Check if OIDC is disabled - if so, allow all access
+    const oidcEnabled = isOIDCEnabled();
+    if (!oidcEnabled) {
+      // Add default user information to headers for API routes when auth is disabled
+      if (pathname.startsWith('/api/')) {
+        const requestHeaders = new Headers(req.headers);
+        requestHeaders.set('x-user-id', 'anonymous');
+        requestHeaders.set('x-user-email', 'anonymous@localhost');
+        requestHeaders.set('x-user-groups', JSON.stringify([]));
+        requestHeaders.set('x-user-roles', JSON.stringify([]));
+
+        return NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
+      }
+      return NextResponse.next();
+    }
 
     // Allow access to public routes
     const publicRoutes = [
@@ -65,6 +86,12 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
+        
+        // Check if OIDC is disabled - if so, allow all access
+        const oidcEnabled = isOIDCEnabled();
+        if (!oidcEnabled) {
+          return true;
+        }
         
         // Allow access to public routes
         const publicRoutes = [

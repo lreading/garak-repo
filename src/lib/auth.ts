@@ -9,6 +9,7 @@ import { NextAuthOptions } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import { getOIDCConfigFromEnv, OIDCProviderConfig } from './oidc-config';
 import { oidcProviderManager } from './oidc-provider';
+import { isOIDCEnabled } from './config';
 
 export interface OIDCSession {
   user: {
@@ -107,10 +108,61 @@ function getMinimalAuthOptions(): NextAuthOptions {
 }
 
 /**
+ * Creates a no-auth configuration when OIDC is explicitly disabled
+ */
+function getNoAuthOptions(): NextAuthOptions {
+  return {
+    providers: [],
+    session: {
+      strategy: 'jwt',
+      maxAge: 3600,
+    },
+    jwt: {
+      maxAge: 3600,
+    },
+    callbacks: {
+      async session({ session }) {
+        // Create a default user session when no auth is required
+        return {
+          ...session,
+          user: {
+            id: 'anonymous',
+            name: 'Anonymous User',
+            email: 'anonymous@localhost',
+            image: null,
+          },
+        };
+      },
+      async jwt({ token }) {
+        // Create a default token when no auth is required
+        return {
+          ...token,
+          sub: 'anonymous',
+          email: 'anonymous@localhost',
+          name: 'Anonymous User',
+          groups: [],
+          roles: [],
+        };
+      },
+    },
+    pages: {
+      signIn: '/auth/signin',
+      error: '/auth/error',
+    },
+    debug: process.env.NODE_ENV === 'development',
+  };
+}
+
+/**
  * NextAuth configuration
  */
 export async function getAuthOptions(): Promise<NextAuthOptions> {
   try {
+    // Check if OIDC is explicitly disabled
+    if (!isOIDCEnabled()) {
+      return getNoAuthOptions();
+    }
+
     const oidcSetup = await getOIDCProvider();
     
     if (!oidcSetup) {

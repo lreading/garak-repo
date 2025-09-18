@@ -2,9 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/hooks/useAuth';
 import { GarakDashboard } from '@/components/GarakDashboard';
-import { UserProfile } from '@/components/UserProfile';
+import { LogoutButton } from '@/components/LogoutButton';
 import { GarakReportMetadata } from '@/lib/garak-parser';
 
 function DashboardContent() {
@@ -13,7 +13,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAuth();
   
   const reportFilename = searchParams.get('report');
 
@@ -141,7 +141,7 @@ function DashboardContent() {
                 Analyzing report: {reportFilename}
               </p>
             </div>
-            <UserProfile className="max-w-sm" />
+            <LogoutButton />
           </div>
         </div>
         <GarakDashboard reportData={reportData} filename={reportFilename!} />

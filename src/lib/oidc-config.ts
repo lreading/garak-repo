@@ -5,6 +5,8 @@
  * including Okta, Google, Azure AD, Auth0, and others.
  */
 
+import { isOIDCEnabled } from './config';
+
 export interface OIDCProviderConfig {
   // Provider identification
   name: string;
@@ -210,6 +212,11 @@ export function mergeOIDCConfig(config: OIDCProviderConfig): OIDCProviderConfig 
  * Gets OIDC configuration from environment variables
  */
 export function getOIDCConfigFromEnv(): OIDCProviderConfig | null {
+  // Check if OIDC is enabled
+  if (!isOIDCEnabled()) {
+    return null;
+  }
+
   const issuer = process.env.OIDC_ISSUER;
   const clientId = process.env.OIDC_CLIENT_ID;
   const clientSecret = process.env.OIDC_CLIENT_SECRET;
