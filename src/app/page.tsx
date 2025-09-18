@@ -5,7 +5,7 @@ import { LoginButton } from '@/components/LoginButton';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
-  const { data: session, status, isAuthenticated, isOIDCEnabled } = useAuth();
+  const { status, isAuthenticated, isOIDCEnabled } = useAuth();
 
   if (status === 'loading') {
     return (

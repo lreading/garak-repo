@@ -5,7 +5,7 @@
  * with support for various OIDC providers through automated service discovery.
  */
 
-import { Issuer, Client, generators, Strategy } from 'openid-client';
+import { Issuer, Client, generators } from 'openid-client';
 import { OIDCProviderConfig, OIDCDiscoveryDocument, OIDCUser, OIDCTokenSet } from './oidc-config';
 
 export interface OIDCProvider {
@@ -57,18 +57,18 @@ export class OIDCProviderManager {
         token_endpoint: oidcIssuer.metadata.token_endpoint!,
         userinfo_endpoint: oidcIssuer.metadata.userinfo_endpoint!,
         jwks_uri: oidcIssuer.metadata.jwks_uri!,
-        end_session_endpoint: oidcIssuer.metadata.end_session_endpoint,
-        revocation_endpoint: oidcIssuer.metadata.revocation_endpoint,
-        introspection_endpoint: oidcIssuer.metadata.introspection_endpoint,
-        scopes_supported: oidcIssuer.metadata.scopes_supported,
-        response_types_supported: oidcIssuer.metadata.response_types_supported,
-        response_modes_supported: oidcIssuer.metadata.response_modes_supported,
-        subject_types_supported: oidcIssuer.metadata.subject_types_supported,
-        id_token_signing_alg_values_supported: oidcIssuer.metadata.id_token_signing_alg_values_supported,
-        token_endpoint_auth_methods_supported: oidcIssuer.metadata.token_endpoint_auth_methods_supported,
-        claims_supported: oidcIssuer.metadata.claims_supported,
-        code_challenge_methods_supported: oidcIssuer.metadata.code_challenge_methods_supported,
-        grant_types_supported: oidcIssuer.metadata.grant_types_supported,
+        end_session_endpoint: oidcIssuer.metadata.end_session_endpoint as string | undefined,
+        revocation_endpoint: oidcIssuer.metadata.revocation_endpoint as string | undefined,
+        introspection_endpoint: oidcIssuer.metadata.introspection_endpoint as string | undefined,
+        scopes_supported: oidcIssuer.metadata.scopes_supported as string[] | undefined,
+        response_types_supported: oidcIssuer.metadata.response_types_supported as string[] | undefined,
+        response_modes_supported: oidcIssuer.metadata.response_modes_supported as string[] | undefined,
+        subject_types_supported: oidcIssuer.metadata.subject_types_supported as string[] | undefined,
+        id_token_signing_alg_values_supported: oidcIssuer.metadata.id_token_signing_alg_values_supported as string[] | undefined,
+        token_endpoint_auth_methods_supported: oidcIssuer.metadata.token_endpoint_auth_methods_supported as string[] | undefined,
+        claims_supported: oidcIssuer.metadata.claims_supported as string[] | undefined,
+        code_challenge_methods_supported: oidcIssuer.metadata.code_challenge_methods_supported as string[] | undefined,
+        grant_types_supported: oidcIssuer.metadata.grant_types_supported as string[] | undefined,
       };
 
       // Cache the discovery document
@@ -166,7 +166,7 @@ export class OIDCProviderManager {
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       ...(provider.config.prompt && { prompt: provider.config.prompt }),
-      ...(provider.config.maxAge && { max_age: provider.config.maxAge.toString() }),
+      ...(provider.config.maxAge && { max_age: provider.config.maxAge }),
     };
 
     return provider.client.authorizationUrl(params);
@@ -182,7 +182,7 @@ export class OIDCProviderManager {
     codeVerifier?: string
   ): Promise<OIDCTokenSet> {
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         code,
         redirect_uri: redirectUri,
       };
@@ -221,9 +221,9 @@ export class OIDCProviderManager {
   /**
    * Validates ID token
    */
-  async validateIdToken(provider: OIDCProvider, idToken: string, nonce?: string): Promise<any> {
+  async validateIdToken(provider: OIDCProvider, idToken: string, nonce?: string): Promise<Record<string, unknown>> {
     try {
-      const claims = await provider.client.validateIdToken(idToken, nonce);
+      const claims = await (provider.client as Record<string, unknown>).validateIdToken(idToken, nonce);
       return claims;
     } catch (error) {
       throw new Error(`ID token validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

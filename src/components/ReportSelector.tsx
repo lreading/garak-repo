@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { UploadModal } from './UploadModal';
 import { LogoutButton } from './LogoutButton';
 import { useAuth } from '@/hooks/useAuth';
+import { apiJson } from '@/lib/api-client';
 
 interface Report {
   filename: string;
@@ -49,8 +50,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     setLoading(true);
     
     // Refresh the reports list
-    fetch('/api/reports')
-      .then(response => response.json())
+    apiJson<{ reports: Report[] }>('/api/reports')
       .then(data => {
         updateReportsState(data.reports);
       })
@@ -69,13 +69,9 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     
     async function loadReports() {
       try {
-        const response = await fetch('/api/reports', {
+        const data = await apiJson<{ reports: Report[] }>('/api/reports', {
           signal: abortController.signal
         });
-        if (!response.ok) {
-          throw new Error('Failed to load reports');
-        }
-        const data = await response.json();
         // Update all state at once to prevent flashing
         updateReportsState(data.reports);
         // Clear expanded folders to start fresh

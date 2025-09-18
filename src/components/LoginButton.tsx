@@ -34,7 +34,7 @@ export function LoginButton({ className = '', children }: LoginButtonProps) {
       } else if (result?.error) {
         router.push('/auth/error?error=LoginFailed');
       }
-    } catch (error) {
+    } catch {
       router.push('/auth/error?error=LoginError');
     } finally {
       setIsLoading(false);

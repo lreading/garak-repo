@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 
 export default function DebugPage() {
-  const [configStatus, setConfigStatus] = useState<any>(null);
+  const [configStatus, setConfigStatus] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

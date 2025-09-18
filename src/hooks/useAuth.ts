@@ -4,6 +4,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+// Removed unused import
 
 export function useAuth() {
   const { data: session, status } = useSession();
@@ -14,12 +15,18 @@ export function useAuth() {
     // Only check on client side to avoid hydration mismatch
     const checkOIDCEnabled = async () => {
       try {
+        // Use regular fetch instead of apiJson to avoid potential circular issues
         const response = await fetch('/api/auth/config');
-        const config = await response.json();
-        setOidcEnabled(config.oidcEnabled);
-      } catch (error) {
-        // Default to enabled if we can't check
-        setOidcEnabled(true);
+        if (response.ok) {
+          const config = await response.json();
+          setOidcEnabled(config.oidcEnabled);
+        } else {
+          // If we can't get the config, default to disabled to avoid redirects
+          setOidcEnabled(false);
+        }
+      } catch {
+        // Default to disabled if we can't check to avoid redirects
+        setOidcEnabled(false);
       }
     };
     

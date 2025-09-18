@@ -69,7 +69,7 @@ export interface OIDCUser {
   family_name?: string;
   groups?: string[];
   roles?: string[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface OIDCTokenSet {
@@ -138,7 +138,7 @@ export function validateOIDCConfig(config: OIDCProviderConfig): { isValid: boole
     errors.push('Issuer URL is required');
   } else {
     try {
-      const issuerUrl = new URL(config.issuer);
+      new URL(config.issuer);
       // Remove trailing slash if present
       if (config.issuer.endsWith('/')) {
         errors.push('Issuer URL should not end with a trailing slash');

@@ -135,6 +135,8 @@ For development or if you prefer to run the application locally:
    - See [OIDC_SETUP.md](OIDC_SETUP.md) for detailed configuration instructions
    - Supports automated service discovery for various providers
 
+   **⚠️ Important:** When changing the `OIDC_ENABLED` environment variable, you must restart the development server for the changes to take effect. Next.js does not automatically reload environment variables on hot reload.
+
 4. **Run the development server:**
    ```bash
    npm run dev

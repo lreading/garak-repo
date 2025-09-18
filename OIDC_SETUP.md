@@ -40,6 +40,8 @@ Copy the example environment file and configure your OIDC provider:
 cp example.env .env
 ```
 
+**⚠️ Important:** When changing the `OIDC_ENABLED` environment variable, you must restart the development server for the changes to take effect. Next.js does not automatically reload environment variables on hot reload.
+
 ### 3. Configure OIDC Provider
 
 Edit `.env` with your OIDC provider details:

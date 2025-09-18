@@ -43,7 +43,7 @@ export interface OIDCJWT extends JWT {
 /**
  * Gets OIDC configuration and creates provider
  */
-async function getOIDCProvider(): Promise<{ config: OIDCProviderConfig; provider: any } | null> {
+async function getOIDCProvider(): Promise<{ config: OIDCProviderConfig; provider: Record<string, unknown> } | null> {
   const config = getOIDCConfigFromEnv();
   if (!config) {
     return null;
@@ -58,7 +58,7 @@ async function getOIDCProvider(): Promise<{ config: OIDCProviderConfig; provider
       wellKnown: `${config.issuer}/.well-known/openid-configuration`,
       clientId: config.clientId,
       clientSecret: config.clientSecret,
-      profile(profile: any) {
+      profile(profile: Record<string, unknown>) {
         return {
           id: profile.sub,
           name: profile.name || profile.preferred_username || profile.email,
@@ -73,7 +73,7 @@ async function getOIDCProvider(): Promise<{ config: OIDCProviderConfig; provider
     
 
     return { config, provider: nextAuthProvider };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -193,9 +193,9 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
             provider: account.provider,
             sub: profile.sub as string,
             email: profile.email,
-            image: (profile as any).picture,
-            groups: (profile as any).groups || [],
-            roles: (profile as any).roles || [],
+            image: (profile as Record<string, unknown>).picture as string,
+            groups: (profile as Record<string, unknown>).groups as string[] || [],
+            roles: (profile as Record<string, unknown>).roles as string[] || [],
           };
         }
 
@@ -214,7 +214,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           ...session,
           user: {
             ...session.user,
-            id: oidcToken.sub || (session.user as any)?.id,
+            id: oidcToken.sub || (session.user as Record<string, unknown>)?.id as string,
             sub: oidcToken.sub,
             email: oidcToken.email || session.user?.email,
             image: oidcToken.image || session.user?.image,
@@ -226,7 +226,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           refreshToken: oidcToken.refreshToken,
           expiresAt: oidcToken.expiresAt,
           provider: oidcToken.provider,
-        } as any;
+        } as OIDCSession;
       },
     },
     pages: {
@@ -235,10 +235,10 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     },
     debug: process.env.OIDC_DEBUG === 'true',
     events: {
-      async signIn({ user, account, profile, isNewUser }) {
+      async signIn() {
         // User signed in
       },
-      async signOut({ token }) {
+      async signOut() {
         // User signed out
       },
     },
@@ -268,7 +268,7 @@ async function refreshAccessToken(token: OIDCJWT): Promise<OIDCJWT> {
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
       expiresAt: refreshedTokens.expires_at ? refreshedTokens.expires_at * 1000 : Date.now() + 3600000,
     };
-  } catch (error) {
+  } catch {
     return {
       ...token,
       error: 'RefreshAccessTokenError',
@@ -294,7 +294,7 @@ export async function isOIDCConfigured(): Promise<boolean> {
     
     const oidcProvider = await oidcProviderManager.createProvider(config);
     return !!oidcProvider;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

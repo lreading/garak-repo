@@ -8,6 +8,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { LogoutButton } from './LogoutButton';
 
 interface UserProfileProps {
@@ -32,15 +33,17 @@ export function UserProfile({ className = '', showLogout = true }: UserProfilePr
   }
 
   const user = session.user;
-  const oidcSession = session as any; // Cast to access OIDC-specific properties
+  const oidcSession = session as Record<string, unknown>; // Cast to access OIDC-specific properties
 
   return (
     <div className={`bg-white rounded-lg shadow-md p-4 ${className}`}>
       <div className="flex items-center space-x-4">
         {user.image && (
-          <img
+          <Image
             src={user.image}
             alt="User"
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-full"
           />
         )}
@@ -61,13 +64,13 @@ export function UserProfile({ className = '', showLogout = true }: UserProfilePr
       </div>
       
       {/* Groups and Roles */}
-      {(user.groups?.length || user.roles?.length) && (
+      {(((user as Record<string, unknown>).groups as string[])?.length || ((user as Record<string, unknown>).roles as string[])?.length) && (
         <div className="mt-4 pt-4 border-t border-gray-200">
-          {user.groups?.length && (
+          {((user as Record<string, unknown>).groups as string[])?.length && (
             <div className="mb-2">
               <h4 className="text-sm font-medium text-gray-700 mb-1">Groups</h4>
               <div className="flex flex-wrap gap-1">
-                {user.groups.map((group, index) => (
+                {((user as Record<string, unknown>).groups as string[]).map((group: string, index: number) => (
                   <span
                     key={index}
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
@@ -79,11 +82,11 @@ export function UserProfile({ className = '', showLogout = true }: UserProfilePr
             </div>
           )}
           
-          {user.roles?.length && (
+          {((user as Record<string, unknown>).roles as string[])?.length && (
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-1">Roles</h4>
               <div className="flex flex-wrap gap-1">
-                {user.roles.map((role, index) => (
+                {((user as Record<string, unknown>).roles as string[]).map((role: string, index: number) => (
                   <span
                     key={index}
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"

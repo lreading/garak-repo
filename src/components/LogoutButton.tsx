@@ -41,7 +41,7 @@ export function LogoutButton({
       
       // Redirect to the specified URL
       router.push(redirectTo);
-    } catch (error) {
+    } catch {
       // Even if logout fails, redirect to sign-in page
       router.push(redirectTo);
     } finally {

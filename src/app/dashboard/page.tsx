@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { GarakDashboard } from '@/components/GarakDashboard';
 import { LogoutButton } from '@/components/LogoutButton';
 import { GarakReportMetadata } from '@/lib/garak-parser';
+import { apiJson } from '@/lib/api-client';
 
 function DashboardContent() {
   const [reportData, setReportData] = useState<GarakReportMetadata | null>(null);
@@ -13,7 +14,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session, status } = useAuth();
+  useAuth(); // Check authentication status
   
   const reportFilename = searchParams.get('report');
 
@@ -33,15 +34,9 @@ function DashboardContent() {
       }
 
       try {
-        const response = await fetch(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename)}`, {
+        const metadata = await apiJson<GarakReportMetadata>(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename)}`, {
           signal: abortController.signal
         });
-        
-        if (!response.ok) {
-          throw new Error('Failed to load report metadata');
-        }
-        
-        const metadata = await response.json();
         setReportData(metadata);
       } catch (err) {
         // Don't set error if the request was aborted
