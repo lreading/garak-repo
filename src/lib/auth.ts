@@ -24,6 +24,7 @@ export interface OIDCSession {
   idToken: string;
   refreshToken?: string;
   expiresAt: number;
+  expires: string;
   provider: string;
 }
 
@@ -172,7 +173,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
   const { config, provider } = oidcSetup;
 
   return {
-    providers: [provider],
+    providers: [provider as unknown as any], // eslint-disable-line @typescript-eslint/no-explicit-any
     session: {
       strategy: 'jwt',
       maxAge: config.maxAge || 3600, // 1 hour
@@ -225,6 +226,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           idToken: oidcToken.idToken,
           refreshToken: oidcToken.refreshToken,
           expiresAt: oidcToken.expiresAt,
+          expires: session.expires,
           provider: oidcToken.provider,
         } as OIDCSession;
       },

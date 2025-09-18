@@ -33,7 +33,7 @@ export function UserProfile({ className = '', showLogout = true }: UserProfilePr
   }
 
   const user = session.user;
-  const oidcSession = session as Record<string, unknown>; // Cast to access OIDC-specific properties
+  const oidcSession = session as unknown as Record<string, unknown>; // Cast to access OIDC-specific properties
 
   return (
     <div className={`bg-white rounded-lg shadow-md p-4 ${className}`}>
@@ -52,11 +52,11 @@ export function UserProfile({ className = '', showLogout = true }: UserProfilePr
             {user.email || 'User'}
           </h3>
           <p className="text-sm text-gray-600">Authenticated User</p>
-          {oidcSession.provider && (
+          {oidcSession.provider ? (
             <p className="text-xs text-gray-500">
-              Provider: {oidcSession.provider}
+              Provider: {String(oidcSession.provider)}
             </p>
-          )}
+          ) : null}
         </div>
         {showLogout && (
           <LogoutButton className="ml-auto" />

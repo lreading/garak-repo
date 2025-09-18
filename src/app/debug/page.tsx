@@ -8,8 +8,22 @@
 
 import { useState, useEffect } from 'react';
 
+interface ConfigStatus {
+  configured: boolean;
+  error?: string;
+  config?: {
+    name: string;
+    issuer: string;
+    clientId: string;
+    scopes?: string[];
+    usePKCE: boolean;
+    maxAge: number;
+  };
+  errors?: string[];
+}
+
 export default function DebugPage() {
-  const [configStatus, setConfigStatus] = useState<Record<string, unknown> | null>(null);
+  const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,12 +73,12 @@ export default function DebugPage() {
                 <h3 className={`text-sm font-medium ${configStatus.configured ? 'text-green-800' : 'text-red-800'}`}>
                   Configuration Status: {configStatus.configured ? 'Configured' : 'Not Configured'}
                 </h3>
-                {configStatus.error && (
+                {configStatus.error ? (
                   <p className="mt-1 text-sm text-red-700">{configStatus.error}</p>
-                )}
+                ) : null}
               </div>
 
-              {configStatus.config && (
+              {configStatus.config ? (
                 <div className="bg-gray-50 rounded-md p-4">
                   <h3 className="text-sm font-medium text-gray-800 mb-3">Configuration Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -94,9 +108,9 @@ export default function DebugPage() {
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
 
-              {configStatus.errors && configStatus.errors.length > 0 && (
+              {configStatus.errors && Array.isArray(configStatus.errors) && configStatus.errors.length > 0 ? (
                 <div className="bg-red-50 border border-red-200 rounded-md p-4">
                   <h3 className="text-sm font-medium text-red-800 mb-2">Configuration Errors</h3>
                   <ul className="list-disc list-inside text-sm text-red-700">
@@ -105,7 +119,7 @@ export default function DebugPage() {
                     ))}
                   </ul>
                 </div>
-              )}
+              ) : null}
 
               <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                 <h3 className="text-sm font-medium text-blue-800 mb-2">Environment Variables</h3>

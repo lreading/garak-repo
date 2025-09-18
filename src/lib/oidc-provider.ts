@@ -223,7 +223,7 @@ export class OIDCProviderManager {
    */
   async validateIdToken(provider: OIDCProvider, idToken: string, nonce?: string): Promise<Record<string, unknown>> {
     try {
-      const claims = await (provider.client as Record<string, unknown>).validateIdToken(idToken, nonce);
+      const claims = await (provider.client as any).validateIdToken(idToken, nonce); // eslint-disable-line @typescript-eslint/no-explicit-any
       return claims;
     } catch (error) {
       throw new Error(`ID token validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
