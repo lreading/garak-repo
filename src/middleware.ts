@@ -52,20 +52,6 @@ export default withAuth(
     const oidcEnabled = isOIDCEnabled();
     
     if (!oidcEnabled) {
-      // Add default user information to headers for API routes when auth is disabled
-      if (isApiRoute(pathname)) {
-        const requestHeaders = new Headers(req.headers);
-        requestHeaders.set('x-user-id', 'anonymous');
-        requestHeaders.set('x-user-email', 'anonymous@localhost');
-        requestHeaders.set('x-user-groups', JSON.stringify([]));
-        requestHeaders.set('x-user-roles', JSON.stringify([]));
-
-        return NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
-      }
       return NextResponse.next();
     }
 
@@ -105,21 +91,6 @@ export default withAuth(
       const signInUrl = new URL('/auth/signin', req.url);
       signInUrl.searchParams.set('callbackUrl', req.url);
       return NextResponse.redirect(signInUrl);
-    }
-
-    // Add user information to headers for API routes
-    if (isApiRoute(pathname)) {
-      const requestHeaders = new Headers(req.headers);
-      requestHeaders.set('x-user-id', token.sub || '');
-      requestHeaders.set('x-user-email', token.email || '');
-      requestHeaders.set('x-user-groups', JSON.stringify(token.groups || []));
-      requestHeaders.set('x-user-roles', JSON.stringify(token.roles || []));
-
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
     }
 
     return NextResponse.next();
