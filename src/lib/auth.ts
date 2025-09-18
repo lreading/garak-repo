@@ -103,7 +103,7 @@ function getMinimalAuthOptions(): NextAuthOptions {
       signIn: '/auth/signin',
       error: '/auth/error',
     },
-    debug: false,
+    debug: process.env.OIDC_DEBUG === 'true'
   };
 }
 
@@ -149,7 +149,7 @@ function getNoAuthOptions(): NextAuthOptions {
       signIn: '/auth/signin',
       error: '/auth/error',
     },
-    debug: false,
+    debug: process.env.OIDC_DEBUG === 'true'
   };
 }
 
@@ -233,7 +233,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
       signIn: '/auth/signin',
       error: '/auth/error',
     },
-    debug: false,
+    debug: process.env.OIDC_DEBUG === 'true',
     events: {
       async signIn({ user, account, profile, isNewUser }) {
         // User signed in

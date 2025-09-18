@@ -27,7 +27,6 @@ The application now includes a generic OIDC integration that supports automated 
 
 ### 1. Install Dependencies
 
-The required dependencies have been added to `package.json`:
 
 ```bash
 npm install
@@ -38,12 +37,12 @@ npm install
 Copy the example environment file and configure your OIDC provider:
 
 ```bash
-cp example.env .env.local
+cp example.env .env
 ```
 
 ### 3. Configure OIDC Provider
 
-Edit `.env.local` with your OIDC provider details:
+Edit `.env` with your OIDC provider details:
 
 ```env
 # Required Configuration
@@ -173,7 +172,6 @@ The application automatically discovers OIDC provider endpoints by fetching the 
 - JWT tokens are used for session management
 - Access tokens are automatically refreshed when needed
 - User information is cached in the session
-- Secure logout terminates both local and provider sessions
 
 ### 4. Route Protection
 
@@ -209,7 +207,7 @@ All routes except public ones (sign-in, error pages) are protected by authentica
 Enable debug mode by setting:
 
 ```env
-NODE_ENV=development
+OIDC_DEBUG=true
 ```
 
 This will provide detailed logging for troubleshooting.
@@ -230,28 +228,6 @@ This will provide detailed logging for troubleshooting.
 - Register the application in Azure AD
 - Configure API permissions
 - Set the redirect URI in authentication settings
-
-## API Integration
-
-The authentication system integrates with the existing API routes. User information is available in API routes through headers:
-
-- `x-user-id`: User's subject identifier
-- `x-user-email`: User's email address
-- `x-user-groups`: User's groups (JSON array)
-- `x-user-roles`: User's roles (JSON array)
-
-## Development
-
-### Local Development
-
-1. Set up your OIDC provider (or use a test provider)
-2. Configure environment variables
-3. Run `npm run dev`
-4. Access the application at `http://localhost:3000`
-
-### Testing
-
-The application includes comprehensive error handling and user feedback for various authentication scenarios.
 
 ## Production Deployment
 
@@ -274,12 +250,3 @@ OIDC_CLIENT_SECRET=your-production-client-secret
 - Ensure HTTPS is enabled in production
 - Regularly rotate client secrets
 - Monitor authentication logs for suspicious activity
-
-## Support
-
-For issues or questions about the OIDC integration:
-
-1. Check the troubleshooting section above
-2. Review the application logs
-3. Verify your OIDC provider configuration
-4. Ensure all environment variables are correctly set
