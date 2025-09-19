@@ -133,8 +133,8 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
   // First pass: calculate vulnerability rates for Z-score calculation
   for (const [, categoryAttempts] of Array.from(categoryMap.entries())) {
     const vulnerableAttempts = categoryAttempts.filter((attempt: GarakAttempt) => 
-      Object.values(attempt.detector_results).some((scores: number[]) => 
-        scores.some((score: number) => score > 0.5)
+      Object.values(attempt.detector_results || {}).some((scores: number[]) => 
+        Array.isArray(scores) && scores.some((score: number) => score > 0.5)
       )
     );
     const vulnerabilityRate = categoryAttempts.length > 0 ? (vulnerableAttempts.length / categoryAttempts.length) * 100 : 0;
@@ -144,7 +144,7 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
   // Second pass: create categories with DEFCON grades
   for (const [categoryName, categoryAttempts] of Array.from(categoryMap.entries())) {
     const scores = categoryAttempts.flatMap((attempt: GarakAttempt) => 
-      Object.values(attempt.detector_results).flat()
+      Object.values(attempt.detector_results || {}).flat()
     ).filter((score: unknown) => typeof score === 'number');
 
     const averageScore = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
@@ -157,8 +157,8 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
     
     // Calculate vulnerability rate
     const vulnerableAttempts = categoryAttempts.filter((attempt: GarakAttempt) => 
-      Object.values(attempt.detector_results).some((scores: number[]) => 
-        scores.some((score: number) => score > 0.5)
+      Object.values(attempt.detector_results || {}).some((scores: number[]) => 
+        Array.isArray(scores) && scores.some((score: number) => score > 0.5)
       )
     );
     const vulnerabilityRate = categoryAttempts.length > 0 ? (vulnerableAttempts.length / categoryAttempts.length) * 100 : 0;
@@ -286,22 +286,29 @@ export function calculateZScore(vulnerabilityRate: number, allRates: number[]): 
 
 // Analyze each response to determine vulnerability
 export function analyzeResponses(attempt: GarakAttempt): ResponseAnalysis[] {
+  // Handle missing or malformed data gracefully
+  if (!attempt.outputs || !Array.isArray(attempt.outputs)) {
+    return [];
+  }
+  
   return attempt.outputs.map((output, index) => {
     // Get detector scores for this specific response (by index)
     const detectorScores: Record<string, number> = {};
     let maxScore = 0;
     
-    Object.entries(attempt.detector_results).forEach(([detector, scores]) => {
-      const score = scores[index] || 0;
-      detectorScores[detector] = score;
-      maxScore = Math.max(maxScore, score);
+    Object.entries(attempt.detector_results || {}).forEach(([detector, scores]) => {
+      if (Array.isArray(scores)) {
+        const score = scores[index] || 0;
+        detectorScores[detector] = score;
+        maxScore = Math.max(maxScore, score);
+      }
     });
     
     const isVulnerable = maxScore > 0.5;
     
     return {
       responseIndex: index,
-      text: output.text,
+      text: output?.text || 'No response text available',
       isVulnerable,
       maxScore,
       detectorScores

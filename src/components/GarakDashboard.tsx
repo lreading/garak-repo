@@ -519,20 +519,20 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                     <div className="mb-3">
                       <div className="text-sm font-medium text-gray-700 mb-1">Prompt:</div>
                       <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        {attempt.prompt.turns[0]?.content.text || 'No prompt text'}
+                        {attempt.prompt?.turns?.[0]?.content?.text || 'No prompt text available'}
                       </div>
                     </div>
 
                     <div className="mb-3">
                       <div className="text-sm font-medium text-gray-700 mb-1">Goal:</div>
-                      <div className="text-sm text-gray-600">{attempt.goal}</div>
+                      <div className="text-sm text-gray-600">{attempt.goal || 'No goal specified'}</div>
                     </div>
 
                     <div className="mb-3">
                       <div className="text-sm font-medium text-gray-700 mb-1">Detector Results:</div>
                       <div className="space-y-2">
-                        {Object.entries(attempt.detector_results).map(([detector, scores]) => {
-                          const maxScore = Math.max(...scores);
+                        {Object.entries(attempt.detector_results || {}).map(([detector, scores]) => {
+                          const maxScore = Array.isArray(scores) && scores.length > 0 ? Math.max(...scores) : 0;
                           const hasVulnerability = maxScore > 0.5;
                           return (
                             <div key={detector} className="bg-gray-50 rounded p-2">
@@ -545,7 +545,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                 </span>
                               </div>
                               <div className="flex space-x-1">
-                                {scores.map((score, i) => (
+                                {Array.isArray(scores) ? scores.map((score, i) => (
                                   <span
                                     key={`${attempt.uuid}-${detector}-score-${i}`}
                                     className={`px-2 py-1 rounded text-xs font-medium ${getScoreColor(score)}`}
@@ -553,7 +553,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                   >
                                     {score.toFixed(3)}
                                   </span>
-                                ))}
+                                )) : (
+                                  <span className="text-xs text-gray-500">No scores available</span>
+                                )}
                               </div>
                             </div>
                           );

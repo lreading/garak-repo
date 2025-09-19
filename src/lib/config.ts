@@ -10,6 +10,7 @@ export interface AppConfig {
   reportDir: string;
   nextAuthUrl: string;
   nextAuthSecret: string;
+  sharedSecret: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export function getAppConfig(): AppConfig {
     reportDir: process.env.REPORT_DIR || './data',
     nextAuthUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
     nextAuthSecret: process.env.NEXTAUTH_SECRET || '',
+    sharedSecret: process.env.SHARED_SECRET || '',
   };
 }
 
