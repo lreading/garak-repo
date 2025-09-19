@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequestWithAuth } from 'next-auth/middleware';
 
 import { isOIDCEnabled } from './lib/config';
-import { validateSharedSecret, isSharedSecretEnabled, createAuthErrorResponse } from './lib/shared-secret-auth';
+import { validateSharedSecret, isSharedSecretEnabled } from './lib/shared-secret-auth';
 
 // Helper function to check if a path matches exactly or is a subpath of a public route
 function isPublicRoute(pathname: string): boolean {
