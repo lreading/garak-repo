@@ -8,7 +8,7 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequestWithAuth } from 'next-auth/middleware';
-// Removed unused import
+
 import { isOIDCEnabled } from './lib/config';
 
 // Helper function to check if a path matches exactly or is a subpath of a public route

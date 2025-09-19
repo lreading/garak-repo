@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GarakReportData, GarakReportMetadata, TestCategory, CategoryMetadata, getScoreColor, getDefconColor, getDefconLabel, analyzeResponses, GarakAttempt } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
+import { LogoutButton } from '@/components/LogoutButton';
+import { useAuth } from '@/hooks/useAuth';
 import { apiJson } from '@/lib/api-client';
 
 interface GarakDashboardProps {
@@ -23,6 +25,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPrevPage, setHasPrevPage] = useState(false);
   const router = useRouter();
+  const { isAuthenticated, isOIDCEnabled } = useAuth();
 
   // Function to load attempts for a category
   const loadCategoryAttempts = async (category: TestCategory | CategoryMetadata, page: number = 1, filter: string = 'all') => {
@@ -125,19 +128,29 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
               </div>
             </div>
             
-            {/* Metadata on the right */}
-            <div className="text-right text-sm text-gray-600 ml-8">
-              <div className="space-y-1">
-                <div>
-                  <span className="font-medium">Run ID:</span> {reportData.runId}
-                </div>
-                <div>
-                  <span className="font-medium">Version:</span> {reportData.garakVersion}
-                </div>
-                <div className="text-xs text-gray-500">
-                  <span className="font-medium">Started:</span> {new Date(reportData.startTime).toLocaleString()}
+            {/* Right side with metadata and logout button */}
+            <div className="flex items-start space-x-6 ml-8">
+              {/* Metadata */}
+              <div className="text-right text-sm text-gray-600">
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Run ID:</span> {reportData.runId}
+                  </div>
+                  <div>
+                    <span className="font-medium">Version:</span> {reportData.garakVersion}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    <span className="font-medium">Started:</span> {new Date(reportData.startTime).toLocaleString()}
+                  </div>
                 </div>
               </div>
+              
+              {/* Logout Button */}
+              {isAuthenticated && isOIDCEnabled && (
+                <div className="flex-shrink-0">
+                  <LogoutButton />
+                </div>
+              )}
             </div>
           </div>
         </div>

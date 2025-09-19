@@ -4,7 +4,6 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-// Removed unused import
 
 export function useAuth() {
   const { data: session, status } = useSession();
