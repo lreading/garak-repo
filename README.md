@@ -15,6 +15,7 @@ A comprehensive repository and analysis tool for storing, organizing, and analyz
 - **Search & Filter**: Search through test categories and filter attempts by vulnerability status
 - **Detailed Response Analysis**: View full prompts, responses, and detector scores for each attempt
 - **🔐 OIDC Authentication**: Secure access with OpenID Connect integration supporting automated service discovery for various providers (Okta, Google, Azure AD, Auth0, Keycloak, AWS Cognito, and more)
+- **🔑 Shared Secret Authentication**: Machine-to-machine API authentication using configurable shared secrets for automated services and CI/CD pipelines
 
 ## Screenshots
 
@@ -125,6 +126,9 @@ For development or if you prefer to run the application locally:
    # NextAuth Configuration (Required if OIDC_ENABLED=true)
    NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=your-secret-key-here
+   
+   # Shared Secret Authentication (Optional - for machine-to-machine API access)
+   SHARED_SECRET=your-shared-secret-here
    ```
 
    **Path handling:**
@@ -187,6 +191,15 @@ The following environment variables can be configured:
 - **`NEXTAUTH_URL`**: Application URL (e.g., `http://localhost:3000`)
 - **`NEXTAUTH_SECRET`**: Secret for JWT signing (generate a strong random string)
 
+### Shared Secret Authentication (Optional)
+
+#### `SHARED_SECRET` (Optional)
+- **Description**: Shared secret for machine-to-machine API authentication
+- **Default**: Not set (authentication disabled)
+- **Usage**: When set, enables API access using shared secret authentication
+- **Authentication Method**: `X-API-Key: <shared-secret>` (case-insensitive header name)
+- **Fallback**: If not set or empty, falls back to OIDC authentication or no authentication (depending on `OIDC_ENABLED`)
+
 For detailed OIDC configuration instructions and provider-specific examples, see [OIDC_SETUP.md](OIDC_SETUP.md).
 
 ## Usage
@@ -224,3 +237,48 @@ The key benefit of this repository is the ability to drill down into specific at
    - Make informed decisions about security posture
 
 This detailed analysis capability helps you understand not just that vulnerabilities were found, but exactly what went wrong and whether the detections are accurate.
+
+### API Usage with Shared Secret Authentication
+
+When `SHARED_SECRET` is configured, you can access the API endpoints programmatically for machine-to-machine communication:
+
+#### Uploading Reports via API
+
+```bash
+# Using X-API-Key header (case-insensitive)
+curl -X POST http://localhost:3000/api/upload-report \
+  -H "X-API-Key: your-shared-secret-here" \
+  -F "file=@your-report.jsonl"
+
+# Alternative case variations (all work the same)
+curl -X POST http://localhost:3000/api/upload-report \
+  -H "x-api-key: your-shared-secret-here" \
+  -F "file=@your-report.jsonl"
+
+curl -X POST http://localhost:3000/api/upload-report \
+  -H "X-Api-Key: your-shared-secret-here" \
+  -F "file=@your-report.jsonl"
+```
+
+#### Listing Reports via API
+
+```bash
+# Get list of all reports
+curl -H "X-API-Key: your-shared-secret-here" \
+  http://localhost:3000/api/reports
+
+# Get specific report content
+curl -H "X-API-Key: your-shared-secret-here" \
+  "http://localhost:3000/api/garak-report?filename=your-report.jsonl"
+```
+
+#### Available API Endpoints
+
+- `POST /api/upload-report` - Upload new Garak report files
+- `GET /api/reports` - List all available reports
+- `GET /api/garak-report` - Get specific report content
+- `GET /api/garak-report-metadata` - Get report metadata
+- `GET /api/garak-report-attempts` - Get report attempts data
+- `GET /api/folders` - List folder structure
+
+**Note**: All API endpoints support shared secret authentication when `SHARED_SECRET` is configured. The `X-API-Key` header name is case-insensitive (e.g., `X-API-Key`, `x-api-key`, `X-Api-Key` all work). If shared secret authentication is not configured, the API will fall back to OIDC authentication or no authentication (depending on your `OIDC_ENABLED` setting).

@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequestWithAuth } from 'next-auth/middleware';
 
 import { isOIDCEnabled } from './lib/config';
+import { validateSharedSecret, isSharedSecretEnabled, createAuthErrorResponse } from './lib/shared-secret-auth';
 
 // Helper function to check if a path matches exactly or is a subpath of a public route
 function isPublicRoute(pathname: string): boolean {
@@ -58,6 +59,19 @@ export default withAuth(
     // Allow access to public routes
     if (isPublicRoute(pathname)) {
       return NextResponse.next();
+    }
+
+    // For API routes, check shared secret authentication first
+    if (isApiRoute(pathname)) {
+      const sharedSecretEnabled = isSharedSecretEnabled();
+      
+      if (sharedSecretEnabled) {
+        const sharedSecretResult = validateSharedSecret(req);
+        if (sharedSecretResult.isAuthenticated) {
+          return NextResponse.next();
+        }
+        // If shared secret auth fails, continue to OIDC check below
+      }
     }
 
     // Check if user is authenticated - this is the critical check
