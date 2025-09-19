@@ -429,7 +429,12 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                         {report.isDirectory ? (
                           <span className="text-gray-400">—</span>
                         ) : (
-                          `${report.runId.substring(0, 8)}...`
+                          <span 
+                            className="cursor-help"
+                            title={report.runId}
+                          >
+                            {`${report.runId.substring(0, 8)}...`}
+                          </span>
                         )}
                       </div>
                     </td>
