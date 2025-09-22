@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GarakReportData, GarakReportMetadata, TestCategory, CategoryMetadata, getScoreColor, getDefconColor, getDefconLabel, analyzeResponses, GarakAttempt } from '@/lib/garak-parser';
 import { CategoryCard } from '@/components/CategoryCard';
 import { LogoutButton } from '@/components/LogoutButton';
+import { ResponseToggle } from '@/components/ResponseToggle';
 import { useAuth } from '@/hooks/useAuth';
 import { apiJson } from '@/lib/api-client';
 
@@ -18,14 +19,99 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [vulnerabilityFilter, setVulnerabilityFilter] = useState<'all' | 'vulnerable' | 'safe'>('all');
   const [categoryAttempts, setCategoryAttempts] = useState<GarakAttempt[]>([]);
+  const [allCategoryAttempts, setAllCategoryAttempts] = useState<GarakAttempt[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [updatedCategories, setUpdatedCategories] = useState<Record<string, TestCategory | CategoryMetadata>>({});
   const [hasPrevPage, setHasPrevPage] = useState(false);
+  const [isReadonly, setIsReadonly] = useState(false);
   const router = useRouter();
   const { isAuthenticated, isOIDCEnabled } = useAuth();
+
+  // Fetch config on mount to check if reports are readonly
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiJson<{ reportReadonly: boolean }>('/api/config');
+        setIsReadonly(response.reportReadonly);
+      } catch (error) {
+        console.error('Failed to fetch config:', error);
+        // Default to readonly on error for safety
+        setIsReadonly(true);
+      }
+    };
+    
+    fetchConfig();
+  }, []);
+
+  // Function to handle detector score updates
+  const handleScoreUpdate = (attemptUuid: string, responseIndex: number, detectorName: string, newScore: number) => {
+    const updateAttempt = (attempt: GarakAttempt) => {
+      if (attempt.uuid === attemptUuid) {
+        const updatedAttempt = { ...attempt };
+        
+        // Initialize detector_results if it doesn't exist
+        if (!updatedAttempt.detector_results) {
+          updatedAttempt.detector_results = {};
+        }
+        
+        // If detector doesn't exist, create it with scores for all responses
+        if (!updatedAttempt.detector_results[detectorName]) {
+          const numOutputs = updatedAttempt.outputs ? updatedAttempt.outputs.length : 1;
+          updatedAttempt.detector_results[detectorName] = new Array(numOutputs).fill(0);
+        }
+        
+        // Update the specific response score
+        updatedAttempt.detector_results = { ...updatedAttempt.detector_results };
+        updatedAttempt.detector_results[detectorName] = [...updatedAttempt.detector_results[detectorName]];
+        updatedAttempt.detector_results[detectorName][responseIndex] = newScore;
+        
+        return updatedAttempt;
+      }
+      return attempt;
+    };
+
+    // Update both filtered attempts and all attempts
+    const updatedFilteredAttempts = categoryAttempts.map(updateAttempt);
+    const updatedAllAttempts = allCategoryAttempts.map(updateAttempt);
+    
+    setCategoryAttempts(updatedFilteredAttempts);
+    setAllCategoryAttempts(updatedAllAttempts);
+    
+    // Refresh category metadata from backend to ensure consistency
+    if (selectedCategory) {
+      // Refresh the category metadata from the backend after successful toggle
+      refreshCategoryMetadata(selectedCategory);
+    }
+  };
+
+  const refreshCategoryMetadata = async (category: TestCategory | CategoryMetadata) => {
+    try {
+      const searchParams = new URLSearchParams();
+      searchParams.set('filename', filename);
+      
+      const response = await apiJson<GarakReportMetadata>(`/api/garak-report-metadata?${searchParams}`);
+      
+      // Find the updated category in the response
+      const updatedCategory = response.categories.find(cat => cat.name === category.name);
+      if (updatedCategory) {
+        // Update the selected category
+        setSelectedCategory(updatedCategory);
+        
+        // Store updated categories in state to override the original reportData
+        setUpdatedCategories(prev => ({
+          ...prev,
+          [category.name]: updatedCategory
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to refresh category metadata:', error);
+    }
+  };
+
 
   // Function to load attempts for a category
   const loadCategoryAttempts = async (category: TestCategory | CategoryMetadata, page: number = 1, filter: string = 'all') => {
@@ -54,6 +140,11 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
       setTotalCount(result.totalCount);
       setHasNextPage(result.hasNextPage);
       setHasPrevPage(result.hasPrevPage);
+      
+      // Store all attempts and total count when loading with 'all' filter
+      if (filter === 'all') {
+        setAllCategoryAttempts(result.attempts);
+      }
     } catch (error) {
       console.error('Error loading attempts:', error);
     } finally {
@@ -66,12 +157,29 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalVulnerabilities = reportData.categories.reduce((sum, cat) => 
-    sum + Math.round((cat.vulnerabilityRate / 100) * cat.totalAttempts), 0
-  );
+  // Calculate updated header statistics, using selectedCategory if it's the one being viewed
+  const getUpdatedCategory = (cat: TestCategory | CategoryMetadata) => {
+    // First check if we have an updated version in our state
+    if (updatedCategories[cat.name]) {
+      return updatedCategories[cat.name];
+    }
+    // Fallback to selectedCategory if it matches
+    if (selectedCategory && cat.name === selectedCategory.name) {
+      return selectedCategory;
+    }
+    return cat;
+  };
+
+  const totalVulnerabilities = reportData.categories.reduce((sum, cat) => {
+    const updatedCat = getUpdatedCategory(cat);
+    return sum + Math.round((updatedCat.vulnerabilityRate / 100) * updatedCat.totalAttempts);
+  }, 0);
 
   const overallVulnerabilityRate = reportData.categories.length > 0 
-    ? reportData.categories.reduce((sum, cat) => sum + cat.vulnerabilityRate, 0) / reportData.categories.length
+    ? reportData.categories.reduce((sum, cat) => {
+        const updatedCat = getUpdatedCategory(cat);
+        return sum + updatedCat.vulnerabilityRate;
+      }, 0) / reportData.categories.length
     : 0;
 
 
@@ -218,7 +326,10 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
               </div>
               <div className="ml-4">
                 <div className="text-2xl font-bold text-gray-900">
-                  {reportData.categories.reduce((sum, cat) => sum + cat.totalAttempts, 0)}
+                  {reportData.categories.reduce((sum, cat) => {
+                    const updatedCat = getUpdatedCategory(cat);
+                    return sum + updatedCat.totalAttempts;
+                  }, 0)}
                 </div>
                 <div className="text-sm text-gray-600">Total Attempts</div>
               </div>
@@ -245,14 +356,32 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
           </div>
         </div>
 
+        {/* Readonly Mode Banner */}
+        {isReadonly && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Read-only mode:</strong> Report editing is disabled. Vulnerability scores cannot be modified.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCategories.map((category) => (
             <CategoryCard
               key={category.name}
-              category={category}
+              category={getUpdatedCategory(category)}
               onClick={() => {
-                setSelectedCategory(category);
+                setSelectedCategory(getUpdatedCategory(category));
                 setCurrentPage(1);
                 setVulnerabilityFilter('all');
                 loadCategoryAttempts(category, 1, 'all');
@@ -375,7 +504,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
-                        All ({selectedCategory.totalAttempts})
+                        All ({allCategoryAttempts.length})
                       </button>
                       <button
                         onClick={() => {
@@ -389,7 +518,11 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
-                        Vulnerable ({Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
+                        Vulnerable ({allCategoryAttempts.filter(attempt => 
+                          Object.values(attempt.detector_results || {}).some((scores: unknown) => 
+                            Array.isArray(scores) && scores.some((score: number) => score > 0.5)
+                          )
+                        ).length})
                       </button>
                       <button
                         onClick={() => {
@@ -403,7 +536,11 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
-                        Safe ({selectedCategory.totalAttempts - Math.round((selectedCategory.vulnerabilityRate / 100) * selectedCategory.totalAttempts)})
+                        Safe ({allCategoryAttempts.filter(attempt => 
+                          !Object.values(attempt.detector_results || {}).some((scores: unknown) => 
+                            Array.isArray(scores) && scores.some((score: number) => score > 0.5)
+                          )
+                        ).length})
                       </button>
                     </div>
                   </div>
@@ -602,8 +739,53 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-gray-700">
+                                  <div className="text-gray-700 mb-2">
                                     {response.text}
+                                  </div>
+                                  {/* Detector Score Toggles */}
+                                  <div className="border-t pt-2">
+                                    <div className="text-xs font-medium text-gray-600 mb-1">Detector Scores:</div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {Object.keys(response.detectorScores).length > 0 ? (
+                                        // Show existing detector scores
+                                        Object.entries(response.detectorScores).map(([detectorName, score]) => (
+                                          <div key={detectorName} className="flex items-center space-x-2 bg-white p-2 rounded border">
+                                            <span className="text-xs text-gray-600">{detectorName}:</span>
+                                            <span className={`text-xs font-medium px-2 py-1 rounded ${getScoreColor(score)}`}>
+                                              {score.toFixed(3)}
+                                            </span>
+                                            {!isReadonly && (
+                                              <ResponseToggle
+                                                attemptUuid={attempt.uuid}
+                                                responseIndex={index}
+                                                detectorName={detectorName}
+                                                currentScore={score}
+                                                filename={filename}
+                                                onToggle={(newScore) => handleScoreUpdate(attempt.uuid, index, detectorName, newScore)}
+                                              />
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        // Show custom toggle when no detectors exist
+                                        <div className="flex items-center space-x-2 bg-white p-2 rounded border">
+                                          <span className="text-xs text-gray-600">custom.falsePositive:</span>
+                                          <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-800">
+                                            0.000
+                                          </span>
+                                          {!isReadonly && (
+                                            <ResponseToggle
+                                              attemptUuid={attempt.uuid}
+                                              responseIndex={index}
+                                              detectorName="custom.falsePositive"
+                                              currentScore={0}
+                                              filename={filename}
+                                              onToggle={(newScore) => handleScoreUpdate(attempt.uuid, index, "custom.falsePositive", newScore)}
+                                            />
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               ))}

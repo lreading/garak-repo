@@ -135,13 +135,10 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
   let totalAttempts = 0;
   let digestData: unknown = null;
   
-  // Count attempts by category without loading full data
-  const categoryCounts = new Map<string, number>();
-  const categoryScores = new Map<string, number[]>();
-  const categoryStatuses = new Map<string, number[]>();
-  const categoryVulnerabilities = new Map<string, number>();
+  // Deduplicate attempts by UUID, preferring status 1 entries
+  const attemptsByUuid = new Map<string, unknown>();
   
-  // Parse each line
+  // Parse each line to collect attempts
   for (const line of lines) {
     try {
       const entry = JSON.parse(line);
@@ -152,40 +149,54 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
         garakVersion = entry.garak_version || '';
       } else if (entry.entry_type === 'digest') {
         digestData = entry;
-      } else if (entry.entry_type === 'attempt') {
-        totalAttempts++;
-        
-        // Extract category name
-        const categoryName = getCategoryName(entry.probe_classname);
-        
-        // Count attempts per category
-        categoryCounts.set(categoryName, (categoryCounts.get(categoryName) || 0) + 1);
-        
-        // Collect scores for this category
-        if (entry.detector_results && Object.keys(entry.detector_results).length > 0) {
-          const scores = Object.values(entry.detector_results).flat().filter((score: unknown) => typeof score === 'number');
-          if (scores.length > 0) {
-            const existingScores = categoryScores.get(categoryName) || [];
-            categoryScores.set(categoryName, [...existingScores, ...scores]);
-          }
-        }
-        
-        // Track status for success rate calculation
-        const existingStatuses = categoryStatuses.get(categoryName) || [];
-        categoryStatuses.set(categoryName, [...existingStatuses, entry.status]);
-        
-        // Check for vulnerabilities
-        if (entry.detector_results && Object.keys(entry.detector_results).length > 0) {
-          const hasVulnerability = Object.values(entry.detector_results).some((scores: unknown) => 
-            Array.isArray(scores) && scores.some((score: number) => score > 0.5)
-          );
-          if (hasVulnerability) {
-            categoryVulnerabilities.set(categoryName, (categoryVulnerabilities.get(categoryName) || 0) + 1);
-          }
-        }
+      } else if (entry.entry_type === 'attempt' && entry.status === 2) {
+        // Only include status 2 (evaluated) attempts
+        attemptsByUuid.set(entry.uuid, entry);
       }
     } catch {
       console.warn('Failed to parse line:', line);
+    }
+  }
+  
+  // Count attempts by category using deduplicated data
+  const categoryCounts = new Map<string, number>();
+  const categoryScores = new Map<string, number[]>();
+  const categoryStatuses = new Map<string, number[]>();
+  const categoryVulnerabilities = new Map<string, number>();
+  
+  totalAttempts = attemptsByUuid.size;
+  
+  // Process deduplicated attempts
+  for (const entry of attemptsByUuid.values()) {
+    const typedEntry = entry as { probe_classname: string; detector_results?: Record<string, number[]>; status: number };
+    
+    // Extract category name
+    const categoryName = getCategoryName(typedEntry.probe_classname);
+    
+    // Count attempts per category
+    categoryCounts.set(categoryName, (categoryCounts.get(categoryName) || 0) + 1);
+    
+    // Collect scores for this category
+    if (typedEntry.detector_results && Object.keys(typedEntry.detector_results).length > 0) {
+      const scores = Object.values(typedEntry.detector_results).flat().filter((score: unknown) => typeof score === 'number');
+      if (scores.length > 0) {
+        const existingScores = categoryScores.get(categoryName) || [];
+        categoryScores.set(categoryName, [...existingScores, ...scores]);
+      }
+    }
+    
+    // Track status for success rate calculation
+    const existingStatuses = categoryStatuses.get(categoryName) || [];
+    categoryStatuses.set(categoryName, [...existingStatuses, typedEntry.status]);
+    
+    // Check for vulnerabilities
+    if (typedEntry.detector_results && Object.keys(typedEntry.detector_results).length > 0) {
+      const hasVulnerability = Object.values(typedEntry.detector_results).some((scores: unknown) => 
+        Array.isArray(scores) && scores.some((score: number) => score > 0.5)
+      );
+      if (hasVulnerability) {
+        categoryVulnerabilities.set(categoryName, (categoryVulnerabilities.get(categoryName) || 0) + 1);
+      }
     }
   }
   

@@ -160,23 +160,28 @@ function parseCategoryAttempts(
   filter: string
 ): AttemptResult {
   const lines = jsonlContent.trim().split('\n');
-  const allAttempts = [];
   
-  // First pass: collect all attempts for the category
+  // First pass: collect all attempts for the category, deduplicating by UUID
+  const attemptsByUuid = new Map();
+  
   for (const line of lines) {
     try {
       const entry = JSON.parse(line);
       
-      if (entry.entry_type === 'attempt') {
+      if (entry.entry_type === 'attempt' && entry.status === 2) {
         const attemptCategory = getCategoryName(entry.probe_classname);
         if (attemptCategory === category) {
-          allAttempts.push(entry);
+          // Only include status 2 (evaluated) attempts
+          attemptsByUuid.set(entry.uuid, entry);
         }
       }
     } catch {
       console.warn('Failed to parse line:', line);
     }
   }
+  
+  // Convert map values to array
+  const allAttempts = Array.from(attemptsByUuid.values());
   
   // Apply filter
   let filteredAttempts = allAttempts;

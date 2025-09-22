@@ -11,6 +11,7 @@ export interface AppConfig {
   nextAuthUrl: string;
   nextAuthSecret: string;
   sharedSecret: string;
+  reportReadonly: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export function getAppConfig(): AppConfig {
     nextAuthUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
     nextAuthSecret: process.env.NEXTAUTH_SECRET || '',
     sharedSecret: process.env.SHARED_SECRET || '',
+    reportReadonly: process.env.REPORT_READONLY === 'true',
   };
 }
 
@@ -31,4 +33,11 @@ export function getAppConfig(): AppConfig {
  */
 export function isOIDCEnabled(): boolean {
   return process.env.OIDC_ENABLED !== 'false';
+}
+
+/**
+ * Gets the report readonly status
+ */
+export function isReportReadonly(): boolean {
+  return process.env.REPORT_READONLY === 'true';
 }
