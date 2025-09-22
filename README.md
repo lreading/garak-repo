@@ -12,6 +12,7 @@ A comprehensive repository and analysis tool for storing, organizing, and analyz
 - **Advanced Analytics**: View comprehensive statistics including vulnerability rates, test categories, and overall security posture
 - **Drill-down Analysis**: Examine individual test attempts and responses to understand specific failures
 - **False Positive Detection**: Analyze detector results and responses to identify potential false positives
+- **🔧 Configurable Report Editing**: Toggle vulnerability scores to mark false positives/negatives (can be disabled for read-only environments)
 - **Search & Filter**: Search through test categories and filter attempts by vulnerability status
 - **Detailed Response Analysis**: View full prompts, responses, and detector scores for each attempt
 - **🔐 OIDC Authentication**: Secure access with OpenID Connect integration supporting automated service discovery for various providers (Okta, Google, Azure AD, Auth0, Keycloak, AWS Cognito, and more)
@@ -170,6 +171,16 @@ The following environment variables can be configured:
 - **Path handling**: 
   - Relative paths are resolved from the project root
   - Absolute paths (starting with `/`) are used as-is
+
+#### `REPORT_READONLY` (Optional)
+- **Description**: Controls whether users can edit vulnerability scores in reports
+- **Default**: `false`
+- **Values**: 
+  - `true`: Reports are read-only, vulnerability scores cannot be modified
+  - `false`: Users can toggle vulnerability scores to mark false positives/negatives
+- **Use cases**: 
+  - Set to `true` for production environments where report integrity must be preserved
+  - Set to `false` for analysis environments where analysts need to mark false positives
 
 ### OIDC Authentication (Optional)
 

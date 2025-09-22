@@ -105,7 +105,8 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
         runId = (entry.run as string) || '';
         startTime = (entry.start_time as string) || '';
         garakVersion = (entry.garak_version as string) || '';
-      } else if (entry.entry_type === 'attempt') {
+      } else if (entry.entry_type === 'attempt' && entry.status === 2) {
+        // Only include status 2 (evaluated) attempts
         attempts.push(entry as unknown as GarakAttempt);
       } else if (entry.entry_type === 'digest') {
         evalData = entry;
@@ -115,7 +116,7 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
     }
   }
 
-  // Group attempts by probe category
+  // Group attempts by probe category (no deduplication needed since we only take status 2)
   const categoryMap = new Map<string, GarakAttempt[]>();
   
   for (const attempt of attempts) {
