@@ -110,21 +110,25 @@ For development or if you prefer to run the application locally:
    cp example.env .env
    ```
 
-   Configure the required environment variables in your `.env` file:
+   Configure the environment variables in your `.env` file:
    ```bash
-   # Directory where Garak report files are stored
+   # Directory where Garak report files are stored (defaults to ./data if not set)
    REPORT_DIR=./data
    
-   # Set to false to disabled authentication
+   # Set to false to disable authentication
    OIDC_ENABLED=true
 
-   # OIDC Authentication (Optional)
+   # OIDC Authentication (Required if OIDC_ENABLED=true)
    OIDC_ISSUER=https://your-oidc-provider.com
    OIDC_CLIENT_ID=your-client-id
    OIDC_CLIENT_SECRET=your-client-secret
    OIDC_PROVIDER_NAME=Your Provider Name
    
-   # NextAuth Configuration (Required if OIDC_ENABLED=true)
+   # NextAuth Configuration
+   # When OIDC_ENABLED=false:
+   #   - NEXTAUTH_URL defaults to http://localhost:3000 if not set
+   #   - NEXTAUTH_SECRET is auto-generated if not set
+   # When OIDC_ENABLED=true, both must be explicitly configured
    NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=your-secret-key-here
    

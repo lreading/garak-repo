@@ -3,6 +3,13 @@
 # Startup script for Garak Repository Docker container
 echo "Starting Garak Repository..."
 
+# Set default REPORT_DIR if not provided
+if [ -z "$REPORT_DIR" ]; then
+    REPORT_DIR="./data"
+    echo "REPORT_DIR not set, using default: $REPORT_DIR"
+    export REPORT_DIR
+fi
+
 # Check if REPORT_DIR exists and is accessible
 if [ ! -d "$REPORT_DIR" ]; then
     echo "ERROR: Report directory '$REPORT_DIR' does not exist!"

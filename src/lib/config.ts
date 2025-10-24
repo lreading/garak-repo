@@ -3,6 +3,9 @@
  * 
  * This file centralizes configuration that needs to be available
  * in both server and middleware contexts.
+ * 
+ * Note: Environment variable defaults are initialized in next.config.mjs
+ * to ensure they're available before any code runs.
  */
 
 export interface AppConfig {
