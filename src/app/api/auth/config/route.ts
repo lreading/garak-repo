@@ -10,6 +10,9 @@ import { getOIDCConfigFromEnv, validateOIDCConfig } from '@/lib/oidc-config';
 import { isOIDCConfigured } from '@/lib/auth';
 import { isOIDCEnabled } from '@/lib/config';
 
+// Force dynamic rendering to ensure runtime environment variables are read
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const oidcEnabled = isOIDCEnabled();
