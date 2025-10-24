@@ -33,9 +33,13 @@ export function getAppConfig(): AppConfig {
 
 /**
  * Gets the OIDC enabled status
+ * Note: The server-wrapper.js ensures process.env is set correctly at startup
+ * We access it dynamically to prevent webpack from inlining the value
  */
 export function isOIDCEnabled(): boolean {
-  return process.env.OIDC_ENABLED !== 'false';
+  // Access dynamically to prevent build-time inlining
+  const envVar = 'OIDC_ENABLED';
+  return process.env[envVar] !== 'false';
 }
 
 /**

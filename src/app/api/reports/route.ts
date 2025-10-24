@@ -6,6 +6,9 @@ import {
   sanitizeError 
 } from '@/lib/security';
 
+// Force dynamic rendering to ensure runtime environment variables are read
+export const dynamic = 'force-dynamic';
+
 interface ReportItem {
   filename: string;
   runId: string;

@@ -9,8 +9,15 @@ import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequestWithAuth } from 'next-auth/middleware';
 
-import { isOIDCEnabled } from './lib/config';
 import { validateSharedSecret, isSharedSecretEnabled } from './lib/shared-secret-auth';
+
+// Helper function to check OIDC enabled status at runtime
+// This reads the environment variable dynamically to avoid build-time inlining
+function isOIDCEnabled(): boolean {
+  // Access dynamically to prevent build-time inlining
+  const envVar = 'OIDC_ENABLED';
+  return process.env[envVar] !== 'false';
+}
 
 // Helper function to check if a path matches exactly or is a subpath of a public route
 function isPublicRoute(pathname: string): boolean {

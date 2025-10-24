@@ -33,6 +33,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Copy server wrapper to inject runtime config
+COPY --chown=nextjs:nodejs server-wrapper.js ./server-wrapper.js
+
 RUN mkdir -p /app/data
 RUN chown nextjs:nodejs /app/data
 
