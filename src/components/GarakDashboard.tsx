@@ -686,9 +686,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                   <span
                                     key={`${attempt.uuid}-${detector}-score-${i}`}
                                     className={`px-2 py-1 rounded text-xs font-medium ${getScoreColor(score)}`}
-                                    title={`Generation ${i + 1}: ${score.toFixed(3)}`}
+                                    title={`Generation ${i + 1}: ${score !== null && score !== undefined ? score.toFixed(3) : 'N/A'}`}
                                   >
-                                    {score.toFixed(3)}
+                                    {score !== null && score !== undefined ? score.toFixed(3) : 'N/A'}
                                   </span>
                                 )) : (
                                   <span className="text-xs text-gray-500">No scores available</span>
@@ -735,7 +735,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                         </span>
                                       )}
                                       <span className="text-xs text-gray-500">
-                                        Max Score: {response.maxScore.toFixed(3)}
+                                        Max Score: {response.maxScore !== null && response.maxScore !== undefined ? response.maxScore.toFixed(3) : 'N/A'}
                                       </span>
                                     </div>
                                   </div>
@@ -752,7 +752,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                           <div key={detectorName} className="flex items-center space-x-2 bg-white p-2 rounded border">
                                             <span className="text-xs text-gray-600">{detectorName}:</span>
                                             <span className={`text-xs font-medium px-2 py-1 rounded ${getScoreColor(score)}`}>
-                                              {score.toFixed(3)}
+                                              {score !== null && score !== undefined ? score.toFixed(3) : 'N/A'}
                                             </span>
                                             {!isReadonly && (
                                               <ResponseToggle
