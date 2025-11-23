@@ -143,7 +143,9 @@ export async function generateSwaggerSpec() {
     const spec = swaggerJSDoc(dynamicOptions);
     
     // Add runtime info
+    // @ts-expect-error - swaggerJSDoc returns object but TypeScript doesn't know about info property
     spec.info.generatedAt = new Date().toISOString();
+    // @ts-expect-error - swaggerJSDoc returns object but TypeScript doesn't know about info property
     spec.info['x-discovered-routes'] = apiRoutes.length;
     
     return spec;
@@ -152,9 +154,9 @@ export async function generateSwaggerSpec() {
     
     // Fallback spec
     return {
-      ...options.definition,
+      ...(options.definition || {}),
       info: {
-        ...options.definition.info,
+        ...(options.definition?.info || {}),
         description: 'API documentation (auto-discovery failed)',
         generatedAt: new Date().toISOString(),
       },
