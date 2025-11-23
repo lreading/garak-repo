@@ -8,6 +8,7 @@ import {
   sanitizeError 
 } from '@/lib/security';
 import { isReportReadonly } from '@/lib/config';
+import { getCache, getReportMetadataCacheKey } from '@/lib/cache';
 
 /**
  * @swagger
@@ -234,6 +235,11 @@ export async function POST(request: Request) {
     // Write the updated content back to the file
     const updatedContent = updatedLines.join('\n');
     writeFileSync(pathValidation.filePath!, updatedContent, 'utf-8');
+    
+    // Invalidate cache for this report since metadata has changed
+    const cache = getCache();
+    const cacheKey = getReportMetadataCacheKey(filename);
+    cache.delete(cacheKey);
     
     return NextResponse.json({ 
       success: true, 

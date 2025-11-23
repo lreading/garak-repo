@@ -9,6 +9,7 @@ import {
   validateFile, 
   sanitizeError 
 } from '@/lib/security';
+import { getCache, getReportMetadataCacheKey } from '@/lib/cache';
 
 /**
  * @swagger
@@ -147,11 +148,23 @@ export async function GET(request: Request) {
       );
     }
     
+    // Check cache first
+    const cache = getCache();
+    const cacheKey = getReportMetadataCacheKey(filename);
+    const cachedMetadata = cache.get<ReportMetadata>(cacheKey);
+    
+    if (cachedMetadata) {
+      return NextResponse.json(cachedMetadata);
+    }
+    
     // Read the report file
     const reportContent = readFileSync(pathValidation.filePath!, 'utf-8');
     
     // Parse only the metadata without loading all attempts
     const metadata = parseReportMetadata(reportContent);
+    
+    // Store in cache (no TTL - cache until invalidated)
+    cache.set(cacheKey, metadata);
     
     return NextResponse.json(metadata);
   } catch (error) {
