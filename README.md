@@ -26,6 +26,8 @@ Try out the Garak Report Repository with our live demo instance:
 
 The demo instance is in **read-only mode** - you can browse and analyze existing reports but cannot upload new reports or modify vulnerability scores. This gives you a chance to explore the interface and see how the tool works with real Garak security testing data.
 
+*Note: The demo runs on recycled hardware (15-20 year old servers) in a home lab environment. Report loading may take up to 30 seconds - please be patient!*
+
 > **Help Wanted!** We're looking for contributors to share complete Garak reports (JSONL format) from popular base models to expand our demo collection. If you have full reports with all probes enabled, please check out [this GitHub issue](https://github.com/lreading/garak-repo/issues/21) to learn how you can contribute!
 
 ## Screenshots
