@@ -9,21 +9,24 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
+    "jose": "^5.2.0",
     "next": "14.2.32",
     "next-auth": "^4.24.5",
     "openid-client": "^5.6.1",
-    "jose": "^5.2.0"
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^18",
+    "@types/node": "20.19.25",
+    "@types/react": "18.3.27",
     "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.32",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.32"
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "glob": "^10.5.0"
   }
 }
