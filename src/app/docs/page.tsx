@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 
+// Force dynamic rendering - this page fetches data at runtime
+export const dynamic = 'force-dynamic';
+
 export default function DocsPage() {
   const [spec, setSpec] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +91,7 @@ export default function DocsPage() {
       <div className="bg-gray-900 text-white py-4 px-6 border-b">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div>
-            <h1 className="text-2xl font-bold">Garak API Documentation</h1>
+            <h1 className="text-2xl font-bold">Garak Repo API Documentation</h1>
             <p className="text-gray-300 text-sm mt-1">
               {/* @ts-expect-error - spec.info may not exist after optional chaining check */}
               Interactive API documentation • Generated at {spec?.info?.generatedAt ? new Date(spec.info.generatedAt).toLocaleString() : 'Unknown'}
