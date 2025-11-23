@@ -33,6 +33,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Copy API route source files for swagger-jsdoc to read at runtime
+COPY --from=builder --chown=nextjs:nodejs /app/src/app/api ./src/app/api
+
+# Copy generated API routes file (generated during prebuild)
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib/api-routes.json ./src/lib/api-routes.json
+
 # Copy server wrapper to inject runtime config
 COPY --chown=nextjs:nodejs server-wrapper.js ./server-wrapper.js
 
