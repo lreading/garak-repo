@@ -15,13 +15,14 @@ interface ReportItem {
   size: number;
   startTime: string | null;
   modelName: string | null;
+  garakVersion: string | null;
   folderPath?: string;
   isDirectory?: boolean;
   children?: ReportItem[];
 }
 
 // Helper function to extract metadata from JSONL file efficiently
-function getReportMetadata(filePath: string): { startTime: string | null; modelName: string | null } {
+function getReportMetadata(filePath: string): { startTime: string | null; modelName: string | null; garakVersion: string | null } {
   try {
     // Read only the first 8KB of the file (should contain first few lines)
     const buffer = Buffer.alloc(8192);
@@ -36,6 +37,7 @@ function getReportMetadata(filePath: string): { startTime: string | null; modelN
     
     let startTime: string | null = null;
     let modelName: string | null = null;
+    let garakVersion: string | null = null;
     
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -57,8 +59,17 @@ function getReportMetadata(filePath: string): { startTime: string | null; modelN
           modelName = data['plugins.model_name'];
         }
         
-        // If we have both, we can return early
-        if (startTime && modelName) {
+        // Check for garak version in init entry or config version
+        if (!garakVersion) {
+          if (data.garak_version) {
+            garakVersion = data.garak_version;
+          } else if (data['_config.version']) {
+            garakVersion = data['_config.version'];
+          }
+        }
+        
+        // If we have all three, we can return early
+        if (startTime && modelName && garakVersion) {
           break;
         }
       } catch {
@@ -67,9 +78,9 @@ function getReportMetadata(filePath: string): { startTime: string | null; modelN
       }
     }
     
-    return { startTime, modelName };
+    return { startTime, modelName, garakVersion };
   } catch {
-    return { startTime: null, modelName: null };
+    return { startTime: null, modelName: null, garakVersion: null };
   }
 }
 
@@ -93,6 +104,7 @@ function scanDirectory(dirPath: string, basePath: string, relativePath: string =
           size: 0,
           startTime: null,
           modelName: null,
+          garakVersion: null,
           folderPath: relativePath || undefined,
           isDirectory: true,
           children: children
@@ -119,7 +131,7 @@ function scanDirectory(dirPath: string, basePath: string, relativePath: string =
           const runId = runIdMatch ? runIdMatch[1] : item;
           
           // Get metadata from the report file
-          const { startTime, modelName } = getReportMetadata(itemPath);
+          const { startTime, modelName, garakVersion } = getReportMetadata(itemPath);
           
           result.push({
             filename: item,
@@ -127,6 +139,7 @@ function scanDirectory(dirPath: string, basePath: string, relativePath: string =
             size: stats.size,
             startTime: startTime,
             modelName: modelName,
+            garakVersion: garakVersion,
             folderPath: relativePath || undefined
           });
         } catch {
@@ -179,6 +192,10 @@ function scanDirectory(dirPath: string, basePath: string, relativePath: string =
  *                             type: string
  *                             nullable: true
  *                             description: Model name from report metadata
+ *                           garakVersion:
+ *                             type: string
+ *                             nullable: true
+ *                             description: Garak version from report metadata
  *                           folderPath:
  *                             type: string
  *                             description: Relative folder path if in subdirectory

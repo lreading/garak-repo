@@ -13,6 +13,7 @@ interface Report {
   size: number;
   startTime: string | null;
   modelName: string | null;
+  garakVersion: string | null;
   folderPath?: string;
   isDirectory?: boolean;
   children?: Report[];
@@ -22,7 +23,7 @@ interface ReportSelectorProps {
   onReportSelect?: (filename: string) => void;
 }
 
-type SortField = 'filename' | 'runId' | 'size' | 'startTime';
+type SortField = 'filename' | 'runId' | 'size' | 'garakVersion' | 'startTime';
 type SortDirection = 'asc' | 'desc';
 
 export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
@@ -148,12 +149,67 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     const filtered = visible.filter(report =>
       report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase()))
+      (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (report.garakVersion && report.garakVersion.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    // DON'T sort - preserve the order from flattening to maintain hierarchy
-    return filtered;
-  }, [reports, searchTerm, flattenReports]);
+    // Sort the filtered results
+    const sorted = [...filtered].sort((a, b) => {
+      // Directories always come first
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      
+      // If both are directories, sort by filename
+      if (a.isDirectory && b.isDirectory) {
+        return a.filename.localeCompare(b.filename);
+      }
+      
+      // For files, sort by the selected field
+      let aValue: string | number | null = null;
+      let bValue: string | number | null = null;
+      
+      switch (sortField) {
+        case 'filename':
+          aValue = a.filename;
+          bValue = b.filename;
+          break;
+        case 'runId':
+          aValue = a.runId;
+          bValue = b.runId;
+          break;
+        case 'size':
+          aValue = a.size;
+          bValue = b.size;
+          break;
+        case 'garakVersion':
+          aValue = a.garakVersion || '';
+          bValue = b.garakVersion || '';
+          break;
+        case 'startTime':
+          aValue = a.startTime ? new Date(a.startTime).getTime() : 0;
+          bValue = b.startTime ? new Date(b.startTime).getTime() : 0;
+          break;
+        default:
+          aValue = a.filename;
+          bValue = b.filename;
+      }
+      
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+      
+      let comparison = 0;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        comparison = aValue.localeCompare(bValue);
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [reports, searchTerm, sortField, sortDirection, flattenReports]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedReports.length / itemsPerPage);
@@ -425,6 +481,20 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('garakVersion')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Garak Version</span>
+                      {sortField === 'garakVersion' && (
+                        <svg className={`w-4 h-4 ${sortDirection === 'asc' ? 'transform rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('startTime')}
                   >
                     <div className="flex items-center space-x-1">
@@ -524,6 +594,15 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                           <span className="text-gray-400">—</span>
                         ) : (
                           formatFileSize(report.size)
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {report.isDirectory ? (
+                          <span className="text-gray-400">—</span>
+                        ) : (
+                          report.garakVersion || 'Unknown'
                         )}
                       </div>
                     </td>
