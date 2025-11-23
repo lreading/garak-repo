@@ -198,11 +198,11 @@ The following environment variables can be configured:
   - Absolute paths (starting with `/`) are used as-is
 
 #### `REPORT_READONLY` (Optional)
-- **Description**: Controls whether users can edit vulnerability scores in reports
+- **Description**: Controls whether the repository is in read-only mode
 - **Default**: `false`
 - **Values**: 
-  - `true`: Reports are read-only, vulnerability scores cannot be modified
-  - `false`: Users can toggle vulnerability scores to mark false positives/negatives
+  - `true`: Read-only mode - disables all state-changing operations (report uploads, vulnerability score editing, upload UI hidden). To add reports in this mode, manually copy `.jsonl` files to the `REPORT_DIR` directory on the filesystem.
+  - `false`: Full access mode - users can upload reports and edit vulnerability scores through the web interface
 - **Use cases**: 
   - Set to `true` for production environments where report integrity must be preserved
   - Set to `false` for analysis environments where analysts need to mark false positives

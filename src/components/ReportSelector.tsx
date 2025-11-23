@@ -36,6 +36,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const [itemsPerPage] = useState(10);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [isReadonly, setIsReadonly] = useState(false);
   const router = useRouter();
   const { isAuthenticated, isOIDCEnabled } = useAuth();
 
@@ -62,6 +63,22 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   const handleUploadError = useCallback((error: string) => {
     console.error('Upload error:', error);
     // Error is already displayed in the FileUpload component
+  }, []);
+
+  // Fetch config on mount to check if reports are readonly
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiJson<{ reportReadonly: boolean }>('/api/config');
+        setIsReadonly(response.reportReadonly);
+      } catch (error) {
+        console.error('Failed to fetch config:', error);
+        // Default to readonly on error for safety
+        setIsReadonly(true);
+      }
+    };
+    
+    fetchConfig();
   }, []);
 
   useEffect(() => {
@@ -235,7 +252,10 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Garak Repository</h1>
                 <p className="mt-2 text-gray-600">
-                  Upload your first Garak report to get started
+                  {isReadonly 
+                    ? 'Repository is in read-only mode'
+                    : 'Upload your first Garak report to get started'
+                  }
                 </p>
               </div>
               <div className="flex items-center space-x-4">
@@ -243,12 +263,14 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                   <div className="text-2xl font-bold text-gray-900">0</div>
                   <div className="text-sm text-gray-600">Available Reports</div>
                 </div>
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                >
-                  Upload Report
-                </button>
+                {!isReadonly && (
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Upload Report
+                  </button>
+                )}
                 {isAuthenticated && isOIDCEnabled && (
                   <LogoutButton />
                 )}
@@ -266,13 +288,20 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Reports Found</h3>
-            <p className="text-gray-600 mb-6">No Garak report files found in the data directory.</p>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg"
-            >
-              Upload Your First Report
-            </button>
+            <p className="text-gray-600 mb-6">
+              {isReadonly 
+                ? 'No Garak report files found in the data directory. Repository is in read-only mode.'
+                : 'No Garak report files found in the data directory.'
+              }
+            </p>
+            {!isReadonly && (
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg"
+              >
+                Upload Your First Report
+              </button>
+            )}
           </div>
         </div>
 
@@ -296,7 +325,10 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Garak Repository</h1>
               <p className="mt-2 text-gray-600">
-                Select a report to view detailed analysis
+                {isReadonly 
+                  ? 'Select a report to view detailed analysis (read-only mode)'
+                  : 'Select a report to view detailed analysis'
+                }
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -306,12 +338,14 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                   {searchTerm ? 'Filtered Reports' : 'Available Reports'}
                 </div>
               </div>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-              >
-                Upload Report
-              </button>
+              {!isReadonly && (
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                >
+                  Upload Report
+                </button>
+              )}
               {isAuthenticated && isOIDCEnabled && (
                 <LogoutButton />
               )}
