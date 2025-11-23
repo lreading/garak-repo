@@ -31,6 +31,7 @@
     "typescript": "5.9.3"
   },
   "overrides": {
-    "glob": "^10.5.0"
+    "glob": "^10.5.0",
+    "js-yaml": "^4.1.1"
   }
 }
