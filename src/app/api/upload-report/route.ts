@@ -4,6 +4,7 @@ import { join } from 'path';
 import { validateFilename, buildSafeFilePath, buildSafeFolderPath, sanitizeError } from '@/lib/security';
 import { GarakReportEntry } from '@/lib/garak-parser';
 import { MAX_FILE_SIZE, ALLOWED_FILE_EXTENSIONS } from '@/lib/security-config';
+import { isReportReadonly } from '@/lib/config';
 
 // Get the report directory from environment variable
 function getReportDir(): string {
@@ -118,6 +119,14 @@ async function getUniqueFilename(reportDir: string, originalFilename: string): P
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if reports are in readonly mode
+    if (isReportReadonly()) {
+      return NextResponse.json(
+        { error: 'Report uploads are disabled. Reports are in readonly mode.' },
+        { status: 403 }
+      );
+    }
+
     // Parse the multipart form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
