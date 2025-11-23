@@ -256,6 +256,23 @@ The following environment variables can be configured:
 - **Authentication Method**: `X-API-Key: <shared-secret>` (case-insensitive header name)
 - **Fallback**: If not set or empty, falls back to OIDC authentication or no authentication (depending on `OIDC_ENABLED`)
 
+### Cache Configuration (Optional)
+
+#### `CACHE_MAX_MEMORY_MB` (Optional)
+- **Description**: Maximum memory limit for the in-memory LRU cache in megabytes
+- **Default**: `100` (100MB)
+- **Purpose**: The cache stores report metadata to significantly improve performance when loading reports. Loading report metadata can be CPU-intensive for large files (~300MB), taking up to 15 seconds depending on hardware. The cache reduces this to near-instant responses for cached reports.
+- **How it works**:
+  - Report metadata is cached after the first load
+  - Cache is automatically invalidated when vulnerability scores are modified
+  - Uses LRU (Least Recently Used) eviction when memory limit is reached
+  - Each cached metadata entry is approximately 7KB
+- **Examples**:
+  - `CACHE_MAX_MEMORY_MB=100` - Default, suitable for most deployments (~14,000 cached reports)
+  - `CACHE_MAX_MEMORY_MB=200` - For high-traffic deployments (~28,000 cached reports)
+  - `CACHE_MAX_MEMORY_MB=50` - For memory-constrained environments (~7,000 cached reports)
+- **Note**: The cache implementation uses an abstraction layer, making it easy to swap in Redis or other centralized caching solutions in the future.
+
 For detailed OIDC configuration instructions and provider-specific examples, see [OIDC_SETUP.md](OIDC_SETUP.md).
 
 ## Usage
