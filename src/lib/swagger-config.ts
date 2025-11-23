@@ -1,6 +1,7 @@
 import swaggerJSDoc from 'swagger-jsdoc';
 import { glob } from 'glob';
 import path from 'path';
+import { readFileSync, existsSync } from 'fs';
 
 const options: swaggerJSDoc.Options = {
   definition: {
@@ -108,9 +109,28 @@ const options: swaggerJSDoc.Options = {
 };
 
 /**
- * Automatically discover API route files
+ * Load pre-generated API routes from build-time file
+ * Falls back to runtime discovery in development
  */
 async function discoverApiRoutes(): Promise<string[]> {
+  // First, try to load the pre-generated routes file (production)
+  const routesFile = path.join(process.cwd(), 'src/lib/api-routes.json');
+  
+  if (existsSync(routesFile)) {
+    try {
+      const routesData = JSON.parse(readFileSync(routesFile, 'utf-8'));
+      const routeFiles = routesData.routes.map((relPath: string) => 
+        path.join(process.cwd(), relPath)
+      );
+      
+      console.log(`[Swagger] Loaded ${routeFiles.length} API routes from build-time file`);
+      return routeFiles;
+    } catch (error) {
+      console.warn('[Swagger] Failed to load routes file, falling back to runtime discovery:', error);
+    }
+  }
+  
+  // Fallback: runtime discovery (development mode)
   try {
     const apiDir = path.join(process.cwd(), 'src/app/api');
     const routeFiles = await glob('**/route.ts', { 
@@ -118,7 +138,7 @@ async function discoverApiRoutes(): Promise<string[]> {
       absolute: true,
     });
     
-    console.log(`[Swagger] Discovered ${routeFiles.length} API routes:`, routeFiles.map(f => path.relative(apiDir, f)));
+    console.log(`[Swagger] Discovered ${routeFiles.length} API routes at runtime:`, routeFiles.map(f => path.relative(apiDir, f)));
     return routeFiles;
   } catch (error) {
     console.warn('[Swagger] Failed to discover API routes:', error);
