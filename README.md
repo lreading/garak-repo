@@ -18,6 +18,16 @@ A comprehensive repository and analysis tool for storing, organizing, and analyz
 - **🔐 OIDC Authentication**: Secure access with OpenID Connect integration supporting automated service discovery for various providers (Okta, Google, Azure AD, Auth0, Keycloak, AWS Cognito, and more)
 - **🔑 Shared Secret Authentication**: Machine-to-machine API authentication using configurable shared secrets for automated services and CI/CD pipelines
 
+## 🌐 Demo Instance
+
+Try out the Garak Report Repository with our live demo instance:
+
+**[https://garak-repo.leoreading.dev/](https://garak-repo.leoreading.dev/)**
+
+The demo instance is in **read-only mode** - you can browse and analyze existing reports but cannot upload new reports or modify vulnerability scores. This gives you a chance to explore the interface and see how the tool works with real Garak security testing data.
+
+> **Help Wanted!** We're looking for contributors to share complete Garak reports (JSONL format) from popular base models to expand our demo collection. If you have full reports with all probes enabled, please check out [this GitHub issue](https://github.com/lreading/garak-repo/issues/21) to learn how you can contribute!
+
 ## Screenshots
 
 ### Report Selection Interface
