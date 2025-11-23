@@ -6,6 +6,51 @@
 
 import { NextResponse } from 'next/server';
 
+/**
+ * @swagger
+ * /api/auth/redirect-uri:
+ *   get:
+ *     summary: Get OIDC redirect URI configuration
+ *     description: Returns the redirect URI that should be configured in your OIDC provider, along with setup instructions for common providers
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Redirect URI information and setup instructions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 redirectUri:
+ *                   type: string
+ *                   description: The redirect URI to configure in your OIDC provider
+ *                   example: http://localhost:3000/api/auth/callback/oidc
+ *                 baseUrl:
+ *                   type: string
+ *                   description: Base URL of the application
+ *                 instructions:
+ *                   type: object
+ *                   description: Setup instructions for common OIDC providers
+ *                   properties:
+ *                     okta:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Step-by-step instructions for Okta
+ *                     google:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Step-by-step instructions for Google
+ *                     azure:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Step-by-step instructions for Azure AD
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ */
 export async function GET() {
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const redirectUri = `${baseUrl}/api/auth/callback/oidc`;

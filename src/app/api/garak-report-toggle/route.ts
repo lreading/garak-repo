@@ -9,6 +9,75 @@ import {
 } from '@/lib/security';
 import { isReportReadonly } from '@/lib/config';
 
+/**
+ * @swagger
+ * /api/garak-report-toggle:
+ *   post:
+ *     summary: Toggle vulnerability score for report attempt
+ *     description: Update the vulnerability score for a specific detector result in a report attempt
+ *     tags: [Reports]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               filename:
+ *                 type: string
+ *                 description: Name of the report file
+ *               attemptUuid:
+ *                 type: string
+ *                 description: UUID of the attempt to modify
+ *               responseIndex:
+ *                 type: integer
+ *                 description: Index of the response within the attempt
+ *               detectorName:
+ *                 type: string
+ *                 description: Name of the detector to modify
+ *               newScore:
+ *                 type: number
+ *                 description: New vulnerability score (0.0 to 1.0)
+ *             required:
+ *               - filename
+ *               - attemptUuid
+ *               - responseIndex
+ *               - detectorName
+ *               - newScore
+ *     responses:
+ *       200:
+ *         description: Score updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request or readonly mode
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Report or attempt not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to update score
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(request: Request) {
   try {
     // Check if reports are in readonly mode

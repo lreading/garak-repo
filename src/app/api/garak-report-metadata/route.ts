@@ -10,6 +10,62 @@ import {
   sanitizeError 
 } from '@/lib/security';
 
+/**
+ * @swagger
+ * /api/garak-report-metadata:
+ *   get:
+ *     summary: Get report metadata and statistics
+ *     description: Retrieve metadata, statistics, and category breakdown for a specific Garak report
+ *     tags: [Reports]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Name of the report file
+ *         example: garak.abc123.jsonl
+ *     responses:
+ *       200:
+ *         description: Report metadata retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 metadata:
+ *                   type: object
+ *                   description: Report metadata from init entry
+ *                 statistics:
+ *                   type: object
+ *                   description: Report statistics and counts
+ *                 categories:
+ *                   type: array
+ *                   description: Available probe categories
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Invalid request parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Report file not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to process report
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

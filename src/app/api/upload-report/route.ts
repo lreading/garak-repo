@@ -117,6 +117,78 @@ async function getUniqueFilename(reportDir: string, originalFilename: string): P
   return filename;
 }
 
+/**
+ * @swagger
+ * /api/upload-report:
+ *   post:
+ *     summary: Upload a new Garak report
+ *     description: Upload a .jsonl Garak report file to the report directory
+ *     tags: [Reports]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Garak report file (.jsonl format)
+ *               folderPath:
+ *                 type: string
+ *                 description: Optional folder path to upload the file to
+ *             required:
+ *               - file
+ *     responses:
+ *       200:
+ *         description: File uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 filename:
+ *                   type: string
+ *                   description: Final filename (may include folder path)
+ *                 size:
+ *                   type: number
+ *                   description: File size in bytes
+ *                 metadata:
+ *                   type: object
+ *                   description: Extracted report metadata
+ *                   properties:
+ *                     runId:
+ *                       type: string
+ *                     startTime:
+ *                       type: string
+ *                     garakVersion:
+ *                       type: string
+ *       400:
+ *         description: Invalid request or file
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Upload disabled (readonly mode)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Upload failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(request: NextRequest) {
   try {
     // Check if reports are in readonly mode

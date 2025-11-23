@@ -142,6 +142,59 @@ function scanDirectory(dirPath: string, basePath: string, relativePath: string =
   }
 }
 
+/**
+ * @swagger
+ * /api/reports:
+ *   get:
+ *     summary: List all available reports
+ *     description: Get a hierarchical list of all Garak reports and folders in the report directory
+ *     tags: [Reports]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of reports and folders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 reports:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Report'
+ *                       - type: object
+ *                         properties:
+ *                           runId:
+ *                             type: string
+ *                             description: Extracted run ID from filename
+ *                           startTime:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                             description: Report start time from metadata
+ *                           modelName:
+ *                             type: string
+ *                             nullable: true
+ *                             description: Model name from report metadata
+ *                           folderPath:
+ *                             type: string
+ *                             description: Relative folder path if in subdirectory
+ *                           isDirectory:
+ *                             type: boolean
+ *                             description: Whether this item is a directory
+ *                           children:
+ *                             type: array
+ *                             description: Child items if this is a directory
+ *       500:
+ *         description: Failed to list reports
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   try {
     // Validate and sanitize report directory

@@ -1,6 +1,43 @@
 import { NextResponse } from 'next/server';
 import { existsSync, readdirSync } from 'fs';
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check endpoint
+ *     description: Check the health status of the application and report directory
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: Health check successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/HealthCheck'
+ *                 - type: object
+ *                   properties:
+ *                     isReadable:
+ *                       type: boolean
+ *                       description: Whether the report directory is readable
+ *                     fileCount:
+ *                       type: number
+ *                       description: Total number of files in report directory
+ *                     jsonlCount:
+ *                       type: number
+ *                       description: Number of .jsonl report files
+ *                     error:
+ *                       type: string
+ *                       nullable: true
+ *                       description: Error message if any
+ *       500:
+ *         description: Health check failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   try {
     const reportDir = process.env.REPORT_DIR || './data';
@@ -11,7 +48,6 @@ export async function GET() {
       return NextResponse.json({
         status: 'error',
         message: 'Report directory does not exist',
-        reportDir,
         timestamp: new Date().toISOString()
       }, { status: 500 });
     }
@@ -34,7 +70,6 @@ export async function GET() {
     return NextResponse.json({
       status: isReadable ? 'healthy' : 'error',
       message: isReadable ? 'Report directory is accessible' : 'Report directory is not accessible',
-      reportDir,
       isReadable,
       fileCount,
       jsonlCount,
