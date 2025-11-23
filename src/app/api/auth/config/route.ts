@@ -13,6 +13,75 @@ import { isOIDCEnabled } from '@/lib/config';
 // Force dynamic rendering to ensure runtime environment variables are read
 export const dynamic = 'force-dynamic';
 
+/**
+ * @swagger
+ * /api/auth/config:
+ *   get:
+ *     summary: Get OIDC authentication configuration status
+ *     description: Check the current OIDC configuration and whether authentication is properly set up
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: OIDC configuration status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 oidcEnabled:
+ *                   type: boolean
+ *                   description: Whether OIDC authentication is enabled
+ *                 configured:
+ *                   type: boolean
+ *                   description: Whether OIDC is properly configured
+ *                 message:
+ *                   type: string
+ *                   description: Status message
+ *                 config:
+ *                   type: object
+ *                   description: OIDC configuration details (when enabled)
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     issuer:
+ *                       type: string
+ *                     clientId:
+ *                       type: string
+ *                       description: Masked client ID
+ *                     scopes:
+ *                       type: string
+ *                     usePKCE:
+ *                       type: boolean
+ *                     useNonce:
+ *                       type: boolean
+ *                     useState:
+ *                       type: boolean
+ *                     maxAge:
+ *                       type: number
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: OIDC configuration error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Error'
+ *                 - type: object
+ *                   properties:
+ *                     required:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: List of required environment variables
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function GET() {
   try {
     const oidcEnabled = isOIDCEnabled();
