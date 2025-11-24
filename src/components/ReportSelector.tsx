@@ -111,50 +111,45 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     };
   }, [updateReportsState]);
 
-  // Flatten hierarchical structure for display
-  const flattenReports = useCallback((items: Report[], level: number = 0, parentExpanded: boolean = true): Array<Report & { level: number; isVisible: boolean }> => {
-    const result: Array<Report & { level: number; isVisible: boolean }> = [];
+  // Recursively count all .jsonl files (not directories) in the reports tree
+  const countAllReports = useCallback((items: Report[], searchTerm: string = ''): number => {
+    let count = 0;
     
     for (const item of items) {
-      const isVisible = level === 0 || parentExpanded;
-      
       if (item.isDirectory) {
-        result.push({ ...item, level, isVisible });
+        // Recursively count children
         if (item.children && item.children.length > 0) {
-          // Create the same folder ID as used in toggleFolder
-          const folderId = item.folderPath ? `${item.folderPath}/${item.filename}` : item.filename;
-          const isExpanded = expandedFolders.has(folderId);
-          if (isExpanded && isVisible) {
-            const children = flattenReports(item.children, level + 1, true);
-            result.push(...children);
-          }
+          count += countAllReports(item.children, searchTerm);
         }
       } else {
-        result.push({ ...item, level, isVisible });
+        // Only count files that end in .jsonl
+        if (item.filename.endsWith('.jsonl')) {
+          // If there's a search term, only count matching files
+          if (!searchTerm || 
+              item.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (item.modelName && item.modelName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+              (item.garakVersion && item.garakVersion.toLowerCase().includes(searchTerm.toLowerCase()))) {
+            count++;
+          }
+        }
       }
     }
     
-    return result;
-  }, [expandedFolders]);
+    return count;
+  }, []);
 
-  // Filter and sort reports
-  const filteredAndSortedReports = useMemo(() => {
-    // First flatten the hierarchical structure
-    const flattened = flattenReports(reports);
-    
-    // Filter visible items
-    const visible = flattened.filter(item => item.isVisible);
-    
-    // Filter by search term
-    const filtered = visible.filter(report =>
-      report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (report.garakVersion && report.garakVersion.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-
-    // Sort the filtered results
-    const sorted = [...filtered].sort((a, b) => {
+  // Sort items hierarchically (sort at each level, preserving parent-child relationships)
+  const sortReportsHierarchically = useCallback((items: Report[]): Report[] => {
+    return items.map(item => {
+      if (item.isDirectory && item.children) {
+        return {
+          ...item,
+          children: sortReportsHierarchically(item.children)
+        };
+      }
+      return item;
+    }).sort((a, b) => {
       // Directories always come first
       if (a.isDirectory && !b.isDirectory) return -1;
       if (!a.isDirectory && b.isDirectory) return 1;
@@ -207,9 +202,60 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
       
       return sortDirection === 'asc' ? comparison : -comparison;
     });
+  }, [sortField, sortDirection]);
 
-    return sorted;
-  }, [reports, searchTerm, sortField, sortDirection, flattenReports]);
+  // Flatten hierarchical structure for display
+  const flattenReports = useCallback((items: Report[], level: number = 0, parentExpanded: boolean = true): Array<Report & { level: number; isVisible: boolean }> => {
+    const result: Array<Report & { level: number; isVisible: boolean }> = [];
+    
+    for (const item of items) {
+      const isVisible = level === 0 || parentExpanded;
+      
+      if (item.isDirectory) {
+        result.push({ ...item, level, isVisible });
+        if (item.children && item.children.length > 0) {
+          // Create the same folder ID as used in toggleFolder
+          const folderId = item.folderPath ? `${item.folderPath}/${item.filename}` : item.filename;
+          const isExpanded = expandedFolders.has(folderId);
+          if (isExpanded && isVisible) {
+            const children = flattenReports(item.children, level + 1, true);
+            result.push(...children);
+          }
+        }
+      } else {
+        result.push({ ...item, level, isVisible });
+      }
+    }
+    
+    return result;
+  }, [expandedFolders]);
+
+  // Count all reports (only .jsonl files, regardless of expansion state)
+  const totalReportCount = useMemo(() => {
+    return countAllReports(reports, searchTerm);
+  }, [reports, searchTerm, countAllReports]);
+
+  // Filter and sort reports
+  const filteredAndSortedReports = useMemo(() => {
+    // First sort the hierarchical structure (preserves parent-child relationships)
+    const sortedReports = sortReportsHierarchically(reports);
+    
+    // Then flatten the hierarchical structure
+    const flattened = flattenReports(sortedReports);
+    
+    // Filter visible items
+    const visible = flattened.filter(item => item.isVisible);
+    
+    // Filter by search term
+    const filtered = visible.filter(report =>
+      report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.runId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.modelName && report.modelName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (report.garakVersion && report.garakVersion.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    return filtered;
+  }, [reports, searchTerm, flattenReports, sortReportsHierarchically]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedReports.length / itemsPerPage);
@@ -389,7 +435,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">{filteredAndSortedReports.length}</div>
+                <div className="text-2xl font-bold text-gray-900">{totalReportCount}</div>
                 <div className="text-sm text-gray-600">
                   {searchTerm ? 'Filtered Reports' : 'Available Reports'}
                 </div>
