@@ -492,56 +492,59 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   <div className="flex items-center space-x-4">
                     <span className="text-sm font-medium text-gray-700">Filter by vulnerability:</span>
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setVulnerabilityFilter('all');
-                          setCurrentPage(1);
-                          loadCategoryAttempts(selectedCategory, 1, 'all');
-                        }}
-                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          vulnerabilityFilter === 'all'
-                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        All ({allCategoryAttempts.length})
-                      </button>
-                      <button
-                        onClick={() => {
-                          setVulnerabilityFilter('vulnerable');
-                          setCurrentPage(1);
-                          loadCategoryAttempts(selectedCategory, 1, 'vulnerable');
-                        }}
-                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          vulnerabilityFilter === 'vulnerable'
-                            ? 'bg-red-100 text-red-800 border border-red-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Vulnerable ({allCategoryAttempts.filter(attempt => 
-                          Object.values(attempt.detector_results || {}).some((scores: unknown) => 
-                            Array.isArray(scores) && scores.some((score: number) => score > 0.5)
-                          )
-                        ).length})
-                      </button>
-                      <button
-                        onClick={() => {
-                          setVulnerabilityFilter('safe');
-                          setCurrentPage(1);
-                          loadCategoryAttempts(selectedCategory, 1, 'safe');
-                        }}
-                        className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                          vulnerabilityFilter === 'safe'
-                            ? 'bg-green-100 text-green-800 border border-green-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        Safe ({allCategoryAttempts.filter(attempt => 
-                          !Object.values(attempt.detector_results || {}).some((scores: unknown) => 
-                            Array.isArray(scores) && scores.some((score: number) => score > 0.5)
-                          )
-                        ).length})
-                      </button>
+                      {(() => {
+                        // Use counts directly from backend metadata
+                        const totalAttempts = selectedCategory.totalAttempts;
+                        const vulnerableAttempts = selectedCategory.vulnerableAttempts ?? Math.round((selectedCategory.vulnerabilityRate / 100) * totalAttempts);
+                        const safeAttempts = selectedCategory.safeAttempts ?? (totalAttempts - vulnerableAttempts);
+                        
+                        return (
+                          <>
+                            <button
+                              onClick={() => {
+                                setVulnerabilityFilter('all');
+                                setCurrentPage(1);
+                                loadCategoryAttempts(selectedCategory, 1, 'all');
+                              }}
+                              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                                vulnerabilityFilter === 'all'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              All ({totalAttempts})
+                            </button>
+                            <button
+                              onClick={() => {
+                                setVulnerabilityFilter('vulnerable');
+                                setCurrentPage(1);
+                                loadCategoryAttempts(selectedCategory, 1, 'vulnerable');
+                              }}
+                              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                                vulnerabilityFilter === 'vulnerable'
+                                  ? 'bg-red-100 text-red-800 border border-red-200'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              Vulnerable ({vulnerableAttempts})
+                            </button>
+                            <button
+                              onClick={() => {
+                                setVulnerabilityFilter('safe');
+                                setCurrentPage(1);
+                                loadCategoryAttempts(selectedCategory, 1, 'safe');
+                              }}
+                              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                                vulnerabilityFilter === 'safe'
+                                  ? 'bg-green-100 text-green-800 border border-green-200'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              Safe ({safeAttempts})
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -577,15 +580,15 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => {
-                        if (hasPrevPage) {
+                        if (hasPrevPage && !attemptsLoading) {
                           const newPage = currentPage - 1;
                           setCurrentPage(newPage);
                           loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
                         }
                       }}
-                      disabled={!hasPrevPage}
+                      disabled={!hasPrevPage || attemptsLoading}
                       className={`px-3 py-1 rounded text-sm font-medium ${
-                        hasPrevPage
+                        hasPrevPage && !attemptsLoading
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
@@ -597,15 +600,15 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                     </span>
                     <button
                       onClick={() => {
-                        if (hasNextPage) {
+                        if (hasNextPage && !attemptsLoading) {
                           const newPage = currentPage + 1;
                           setCurrentPage(newPage);
                           loadCategoryAttempts(selectedCategory, newPage, vulnerabilityFilter);
                         }
                       }}
-                      disabled={!hasNextPage}
+                      disabled={!hasNextPage || attemptsLoading}
                       className={`px-3 py-1 rounded text-sm font-medium ${
-                        hasNextPage
+                        hasNextPage && !attemptsLoading
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
@@ -636,7 +639,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   <div key={`${selectedCategory?.name}-${index}-${attempt.uuid}-${attempt.seq}`} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
-                        <h4 className="font-medium text-gray-900">Attempt #{attempt.seq}</h4>
+                        <h4 className="font-medium text-gray-900">Attempt #{attempt.seq + 1}</h4>
                         <span className="text-xs text-gray-500">UUID: {attempt.uuid}</span>
                       </div>
                       <div className="flex items-center space-x-2">

@@ -48,6 +48,8 @@ export interface TestCategory {
   displayName: string;
   attempts: GarakAttempt[];
   totalAttempts: number;
+  vulnerableAttempts: number;
+  safeAttempts: number;
   averageScore: number;
   maxScore: number;
   minScore: number;
@@ -62,6 +64,8 @@ export interface CategoryMetadata {
   name: string;
   displayName: string;
   totalAttempts: number;
+  vulnerableAttempts: number;
+  safeAttempts: number;
   averageScore: number;
   maxScore: number;
   minScore: number;
@@ -172,11 +176,15 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupLink = (evalData as any)?.eval?.[categoryName]?._summary?.group_link;
 
+    const safeAttempts = categoryAttempts.length - vulnerableAttempts.length;
+    
     categories.push({
       name: categoryName,
       displayName: getDisplayName(categoryName),
       attempts: categoryAttempts,
       totalAttempts: categoryAttempts.length,
+      vulnerableAttempts: vulnerableAttempts.length,
+      safeAttempts,
       averageScore,
       maxScore,
       minScore,

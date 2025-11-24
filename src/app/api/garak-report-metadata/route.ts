@@ -37,17 +37,73 @@ import { getCache, getReportMetadataCacheKey } from '@/lib/cache';
  *             schema:
  *               type: object
  *               properties:
- *                 metadata:
- *                   type: object
- *                   description: Report metadata from init entry
- *                 statistics:
- *                   type: object
- *                   description: Report statistics and counts
+ *                 runId:
+ *                   type: string
+ *                   description: Unique identifier for the test run
+ *                 startTime:
+ *                   type: string
+ *                   description: ISO timestamp when the test run started
+ *                 garakVersion:
+ *                   type: string
+ *                   description: Version of Garak used for this test run
+ *                 totalAttempts:
+ *                   type: integer
+ *                   description: Total number of evaluated attempts across all categories
  *                 categories:
  *                   type: array
- *                   description: Available probe categories
+ *                   description: Array of test categories with statistics
  *                   items:
- *                     type: string
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Category name (e.g., "latentinjection")
+ *                       displayName:
+ *                         type: string
+ *                         description: Human-readable category name (e.g., "Latent Injection")
+ *                       totalAttempts:
+ *                         type: integer
+ *                         description: Total number of attempts in this category
+ *                       vulnerableAttempts:
+ *                         type: integer
+ *                         description: Number of attempts with at least one detector score > 0.5
+ *                       safeAttempts:
+ *                         type: integer
+ *                         description: Number of attempts with all detector scores <= 0.5
+ *                       averageScore:
+ *                         type: number
+ *                         format: float
+ *                         description: Average detector score across all attempts in this category
+ *                       maxScore:
+ *                         type: number
+ *                         format: float
+ *                         description: Maximum detector score found in this category
+ *                       minScore:
+ *                         type: number
+ *                         format: float
+ *                         description: Minimum detector score found in this category
+ *                       successRate:
+ *                         type: number
+ *                         format: float
+ *                         description: Percentage of attempts with status 1 or 2 (successful)
+ *                       defconGrade:
+ *                         type: integer
+ *                         minimum: 1
+ *                         maximum: 5
+ *                         description: DEFCON grade (1=most vulnerable, 5=least vulnerable)
+ *                       zScore:
+ *                         type: number
+ *                         format: float
+ *                         description: Z-score of vulnerability rate compared to all categories
+ *                       vulnerabilityRate:
+ *                         type: number
+ *                         format: float
+ *                         description: Percentage of attempts that are vulnerable (vulnerableAttempts / totalAttempts * 100)
+ *                       groupLink:
+ *                         type: string
+ *                         format: uri
+ *                         description: Optional link to category documentation
+ *                         nullable: true
  *       400:
  *         description: Invalid request parameters
  *         content:
@@ -185,6 +241,8 @@ interface ReportMetadata {
     name: string;
     displayName: string;
     totalAttempts: number;
+    vulnerableAttempts: number;
+    safeAttempts: number;
     averageScore: number;
     maxScore: number;
     minScore: number;
@@ -303,10 +361,14 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groupLink = (digestData as any)?.eval?.[categoryName]?._summary?.group_link;
     
+    const safeCount = count - vulnerableCount;
+    
     categories.push({
       name: categoryName,
       displayName: getDisplayName(categoryName),
       totalAttempts: count,
+      vulnerableAttempts: vulnerableCount,
+      safeAttempts: safeCount,
       averageScore,
       maxScore,
       minScore,
