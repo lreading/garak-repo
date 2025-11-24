@@ -48,6 +48,7 @@ export interface TestCategory {
   displayName: string;
   attempts: GarakAttempt[];
   totalAttempts: number;
+  totalTurns: number;
   vulnerableAttempts: number;
   safeAttempts: number;
   averageScore: number;
@@ -64,6 +65,7 @@ export interface CategoryMetadata {
   name: string;
   displayName: string;
   totalAttempts: number;
+  totalTurns: number;
   vulnerableAttempts: number;
   safeAttempts: number;
   averageScore: number;
@@ -178,11 +180,15 @@ export function parseGarakReport(jsonlContent: string): GarakReportData {
 
     const safeAttempts = categoryAttempts.length - vulnerableAttempts.length;
     
+    // Calculate total turns (sum of all outputs/responses)
+    const totalTurns = categoryAttempts.reduce((sum, attempt) => sum + (attempt.outputs?.length || 0), 0);
+    
     categories.push({
       name: categoryName,
       displayName: getDisplayName(categoryName),
       attempts: categoryAttempts,
       totalAttempts: categoryAttempts.length,
+      totalTurns,
       vulnerableAttempts: vulnerableAttempts.length,
       safeAttempts,
       averageScore,

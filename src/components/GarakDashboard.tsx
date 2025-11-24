@@ -458,7 +458,13 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   </button>
                 </div>
               
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xl font-bold text-gray-900">
+                      {selectedCategory.totalTurns ?? categoryAttempts.reduce((sum, attempt) => sum + (attempt.outputs?.length || 0), 0)}
+                    </div>
+                    <div className="text-xs text-gray-600">Total Turns</div>
+                  </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="text-xl font-bold text-gray-900">{selectedCategory.totalAttempts}</div>
                     <div className="text-xs text-gray-600">Total Attempts</div>

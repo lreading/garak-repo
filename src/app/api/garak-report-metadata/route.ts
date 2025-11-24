@@ -241,6 +241,7 @@ interface ReportMetadata {
     name: string;
     displayName: string;
     totalAttempts: number;
+    totalTurns: number;
     vulnerableAttempts: number;
     safeAttempts: number;
     averageScore: number;
@@ -290,18 +291,23 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
   const categoryScores = new Map<string, number[]>();
   const categoryStatuses = new Map<string, number[]>();
   const categoryVulnerabilities = new Map<string, number>();
+  const categoryTurns = new Map<string, number>();
   
   totalAttempts = attemptsByUuid.size;
   
   // Process deduplicated attempts
   for (const entry of attemptsByUuid.values()) {
-    const typedEntry = entry as { probe_classname: string; detector_results?: Record<string, number[]>; status: number };
+    const typedEntry = entry as { probe_classname: string; detector_results?: Record<string, number[]>; status: number; outputs?: Array<{ text: string; lang: string }> };
     
     // Extract category name
     const categoryName = getCategoryName(typedEntry.probe_classname);
     
     // Count attempts per category
     categoryCounts.set(categoryName, (categoryCounts.get(categoryName) || 0) + 1);
+    
+    // Count turns (outputs) per category
+    const outputsCount = typedEntry.outputs?.length || 0;
+    categoryTurns.set(categoryName, (categoryTurns.get(categoryName) || 0) + outputsCount);
     
     // Collect scores for this category
     if (typedEntry.detector_results && Object.keys(typedEntry.detector_results).length > 0) {
@@ -341,6 +347,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
     const scores = categoryScores.get(categoryName) || [];
     const statuses = categoryStatuses.get(categoryName) || [];
     const vulnerableCount = categoryVulnerabilities.get(categoryName) || 0;
+    const totalTurns = categoryTurns.get(categoryName) || 0;
     
     const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
     const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
@@ -367,6 +374,7 @@ function parseReportMetadata(jsonlContent: string): ReportMetadata {
       name: categoryName,
       displayName: getDisplayName(categoryName),
       totalAttempts: count,
+      totalTurns,
       vulnerableAttempts: vulnerableCount,
       safeAttempts: safeCount,
       averageScore,
