@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
-import { readFileSync } from 'fs';
-import { 
-  validateFilename, 
-  validateReportDirectory, 
-  buildSafeFilePath, 
-  validateFile, 
-  sanitizeError 
-} from '@/lib/security';
+import { sanitizeError } from '@/lib/security';
+import { ServiceFactory } from '@/app/service/factory/ServiceFactory';
+import { ReportServiceError } from '@/app/service/errors/report-errors';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * @swagger
@@ -74,52 +71,27 @@ export async function GET(request: Request) {
       );
     }
     
-    // Validate filename with comprehensive security checks
-    const filenameValidation = validateFilename(filename);
-    if (!filenameValidation.isValid) {
-      return NextResponse.json(
-        { error: filenameValidation.error },
-        { status: 400 }
-      );
-    }
+    // Call the service to get the report content
+    const reportService = ServiceFactory.getReportService();
+    const result = await reportService.getReportContent({ filename });
     
-    // Validate and sanitize report directory
-    const reportDir = process.env.REPORT_DIR || './data';
-    const dirValidation = validateReportDirectory(reportDir);
-    if (!dirValidation.isValid) {
-      return NextResponse.json(
-        { error: 'Invalid report directory configuration' },
-        { status: 500 }
-      );
-    }
-    
-    // Build safe file path
-    const pathValidation = buildSafeFilePath(reportDir, filename);
-    if (!pathValidation.isValid) {
-      return NextResponse.json(
-        { error: pathValidation.error },
-        { status: 400 }
-      );
-    }
-    
-    // Validate file before reading
-    const fileValidation = validateFile(pathValidation.filePath!);
-    if (!fileValidation.isValid) {
-      return NextResponse.json(
-        { error: fileValidation.error },
-        { status: 404 }
-      );
-    }
-    
-    // Read the report file
-    const reportContent = readFileSync(pathValidation.filePath!, 'utf-8');
-    
-    return new NextResponse(reportContent, {
+    return new NextResponse(result.content, {
       headers: {
         'Content-Type': 'text/plain',
       },
     });
   } catch (error) {
+    console.error('Error in garak-report API:', error);
+    
+    // Handle typed service errors
+    if (error instanceof ReportServiceError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+    }
+    
+    // Fallback for unexpected errors
     const sanitizedError = sanitizeError(error);
     return NextResponse.json(
       { error: sanitizedError },
