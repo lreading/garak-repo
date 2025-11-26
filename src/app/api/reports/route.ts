@@ -70,7 +70,12 @@ export async function GET() {
     
     return NextResponse.json({ reports });
   } catch (error) {
-    console.error('Error in reports API:', error);
+    // Enhanced error logging
+    console.error('[GET /api/reports] Error:', error);
+    if (error instanceof Error) {
+      console.error('[GET /api/reports] Error message:', error.message);
+      console.error('[GET /api/reports] Error stack:', error.stack);
+    }
     
     // Handle typed service errors
     if (error instanceof ReportServiceError) {
@@ -93,6 +98,10 @@ export async function GET() {
         errorMessage = 'Permission denied accessing report directory. Please check file permissions.';
       } else if (error.message.includes('EMFILE') || error.message.includes('ENFILE')) {
         errorMessage = 'Too many open files. Please check system limits.';
+      } else if (error.message.includes('Database not configured')) {
+        errorMessage = 'Database is not configured. Please set database environment variables or use file-based storage.';
+      } else if (error.message.includes('Failed to initialize database')) {
+        errorMessage = 'Failed to initialize database connection. Please check your database configuration and ensure the database is running.';
       }
     }
     

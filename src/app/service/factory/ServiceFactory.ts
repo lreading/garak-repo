@@ -1,7 +1,10 @@
 import { IFolderService } from '../interfaces/IFolderService';
 import { FileFolderService } from '../implementations/FileFolderService';
+import { DatabaseFolderService } from '../implementations/DatabaseFolderService';
 import { IReportService } from '../interfaces/IReportService';
 import { FileReportService } from '../implementations/FileReportService';
+import { DatabaseReportService } from '../implementations/DatabaseReportService';
+import { isDatabaseConfigured } from '@/app/data-source';
 
 /**
  * Storage backend type
@@ -22,9 +25,12 @@ export class ServiceFactory {
    * Get the configured storage backend from environment
    */
   private static getStorageBackend(): StorageBackend {
-    // TODO: Read POSTGRES specific env variables to determine if we should use the database backend
-    const backend = process.env.STORAGE_BACKEND || 'file';
-    return backend === 'database' ? 'database' : 'file';
+    // Check if database is configured via environment variables
+    if (isDatabaseConfigured()) {
+      return 'database';
+    }
+    // Default to file storage
+    return 'file';
   }
 
   /**
@@ -42,8 +48,8 @@ export class ServiceFactory {
         this.folderServiceInstance = new FileFolderService();
         break;
       case 'database':
-        // TODO: Implement DatabaseFolderService when database layer is added
-        throw new Error('Database backend not yet implemented');
+        this.folderServiceInstance = new DatabaseFolderService();
+        break;
       default:
         throw new Error(`Unknown storage backend: ${backend}`);
     }
@@ -66,8 +72,8 @@ export class ServiceFactory {
         this.reportServiceInstance = new FileReportService();
         break;
       case 'database':
-        // TODO: Implement DatabaseReportService when database layer is added
-        throw new Error('Database backend not yet implemented');
+        this.reportServiceInstance = new DatabaseReportService();
+        break;
       default:
         throw new Error(`Unknown storage backend: ${backend}`);
     }

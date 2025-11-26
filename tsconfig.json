@@ -18,6 +18,8 @@
     "incremental": true,
     "target": "es2022",
     "downlevelIteration": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "plugins": [
       {
         "name": "next"
