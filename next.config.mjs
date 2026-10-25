@@ -105,7 +105,10 @@ initializeEnvironmentDefaults();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: 'standalone'
+    output: 'standalone',
+    outputFileTracingExcludes: {
+      '**/*': ['./.aws/**/*', './.codex/**/*', './.agents/**/*', './.env*'],
+    },
 };
 
 export default nextConfig;

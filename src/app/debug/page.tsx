@@ -6,6 +6,8 @@
 
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect } from 'react';
 
 interface ConfigStatus {
@@ -57,7 +59,7 @@ export default function DebugPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow-sm rounded-lg p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">OIDC Configuration Debug</h1>
           
           {error ? (
@@ -138,12 +140,11 @@ export default function DebugPage() {
           ) : null}
 
           <div className="mt-6 flex space-x-4">
-            <a
-              href="/"
+            <Link               href="/"
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
             >
               Back to Home
-            </a>
+            </Link>
             <button
               onClick={() => window.location.reload()}
               className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"

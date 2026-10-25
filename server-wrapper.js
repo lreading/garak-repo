@@ -5,7 +5,6 @@
 
 // Read runtime config and set as environment variables
 const fs = require('fs');
-const path = require('path');
 
 try {
   const configPath = '/tmp/.runtime-config.json';
@@ -19,7 +18,7 @@ try {
   });
   
   console.log('Runtime config loaded: OIDC_ENABLED=' + process.env.OIDC_ENABLED);
-} catch (err) {
+} catch {
   console.log('No runtime config found, using build-time environment');
 }
 

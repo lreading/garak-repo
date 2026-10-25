@@ -1,16 +1,11 @@
-/**
- * OIDC Provider with Automated Service Discovery
- * 
- * This module handles OIDC provider discovery, token management, and user authentication
- * with support for various OIDC providers through automated service discovery.
- */
-
-import { Issuer, Client, generators } from 'openid-client';
+/** OIDC discovery, authorization, and token management. */
+import * as oidc from 'openid-client';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { OIDCProviderConfig, OIDCDiscoveryDocument, OIDCUser, OIDCTokenSet } from './oidc-config';
 
 export interface OIDCProvider {
   config: OIDCProviderConfig;
-  client: Client;
+  client: oidc.Configuration;
   discovery: OIDCDiscoveryDocument;
 }
 
@@ -26,276 +21,152 @@ export interface OIDCError extends Error {
   provider?: string;
 }
 
-/**
- * OIDC Provider Manager
- */
+export interface OIDCAuthorizationRequest {
+  url: string;
+  codeVerifier: string;
+  state: string;
+  nonce: string;
+}
+
+function tokenSet(tokens: oidc.TokenEndpointResponse): OIDCTokenSet {
+  return {
+    access_token: tokens.access_token,
+    id_token: tokens.id_token,
+    refresh_token: tokens.refresh_token,
+    expires_at: typeof tokens.expires_in === 'number'
+      ? Math.floor(Date.now() / 1000) + tokens.expires_in
+      : undefined,
+    scope: tokens.scope,
+    token_type: tokens.token_type,
+  };
+}
+
 export class OIDCProviderManager {
-  private providers: Map<string, OIDCProvider> = new Map();
-  private discoveryCache: Map<string, OIDCDiscoveryDocument> = new Map();
-  private cacheExpiry: Map<string, number> = new Map();
-  private readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+  private providers = new Map<string, OIDCProvider>();
+  private discoveryCache = new Map<string, OIDCDiscoveryDocument>();
+  private cacheExpiry = new Map<string, number>();
+  private readonly CACHE_DURATION = 24 * 60 * 60 * 1000;
 
-  /**
-   * Discovers OIDC provider configuration
-   */
   async discoverProvider(issuer: string): Promise<OIDCDiscoveryDocument> {
-    const cacheKey = issuer;
-    const now = Date.now();
-    
-    // Check cache first
-    if (this.discoveryCache.has(cacheKey) && this.cacheExpiry.get(cacheKey)! > now) {
-      return this.discoveryCache.get(cacheKey)!;
+    const cached = this.discoveryCache.get(issuer);
+    if (cached && (this.cacheExpiry.get(issuer) ?? 0) > Date.now()) return cached;
+
+    const discovered = await oidc.discovery(new URL(issuer), 'discovery');
+    const metadata = discovered.serverMetadata();
+    if (!metadata.authorization_endpoint || !metadata.token_endpoint || !metadata.jwks_uri) {
+      throw new Error('OIDC provider is missing required endpoints');
     }
-
-    try {
-      // Use openid-client for discovery
-      const oidcIssuer = await Issuer.discover(issuer);
-      
-      const discovery: OIDCDiscoveryDocument = {
-        issuer: oidcIssuer.metadata.issuer,
-        authorization_endpoint: oidcIssuer.metadata.authorization_endpoint!,
-        token_endpoint: oidcIssuer.metadata.token_endpoint!,
-        userinfo_endpoint: oidcIssuer.metadata.userinfo_endpoint!,
-        jwks_uri: oidcIssuer.metadata.jwks_uri!,
-        end_session_endpoint: oidcIssuer.metadata.end_session_endpoint as string | undefined,
-        revocation_endpoint: oidcIssuer.metadata.revocation_endpoint as string | undefined,
-        introspection_endpoint: oidcIssuer.metadata.introspection_endpoint as string | undefined,
-        scopes_supported: oidcIssuer.metadata.scopes_supported as string[] | undefined,
-        response_types_supported: oidcIssuer.metadata.response_types_supported as string[] | undefined,
-        response_modes_supported: oidcIssuer.metadata.response_modes_supported as string[] | undefined,
-        subject_types_supported: oidcIssuer.metadata.subject_types_supported as string[] | undefined,
-        id_token_signing_alg_values_supported: oidcIssuer.metadata.id_token_signing_alg_values_supported as string[] | undefined,
-        token_endpoint_auth_methods_supported: oidcIssuer.metadata.token_endpoint_auth_methods_supported as string[] | undefined,
-        claims_supported: oidcIssuer.metadata.claims_supported as string[] | undefined,
-        code_challenge_methods_supported: oidcIssuer.metadata.code_challenge_methods_supported as string[] | undefined,
-        grant_types_supported: oidcIssuer.metadata.grant_types_supported as string[] | undefined,
-      };
-
-      // Cache the discovery document
-      this.discoveryCache.set(cacheKey, discovery);
-      this.cacheExpiry.set(cacheKey, now + this.CACHE_DURATION);
-
-      return discovery;
-    } catch (error) {
-      throw new Error(`Failed to discover OIDC provider: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    const discovery = metadata as OIDCDiscoveryDocument;
+    this.discoveryCache.set(issuer, discovery);
+    this.cacheExpiry.set(issuer, Date.now() + this.CACHE_DURATION);
+    return discovery;
   }
 
-  /**
-   * Creates an OIDC provider with client
-   */
   async createProvider(config: OIDCProviderConfig): Promise<OIDCProvider> {
     const cacheKey = `${config.name}-${config.issuer}`;
-    
-    // Check if provider already exists
-    if (this.providers.has(cacheKey)) {
-      return this.providers.get(cacheKey)!;
-    }
+    const cached = this.providers.get(cacheKey);
+    if (cached && cached.config.clientId === config.clientId &&
+        cached.config.clientSecret === config.clientSecret &&
+        (this.cacheExpiry.get(config.issuer) ?? 0) > Date.now()) return cached;
 
-    try {
-      // Discover provider configuration
-      const discovery = await this.discoverProvider(config.issuer);
-      
-      // Create OIDC issuer
-      const issuer = new Issuer({
-        issuer: discovery.issuer,
-        authorization_endpoint: discovery.authorization_endpoint,
-        token_endpoint: discovery.token_endpoint,
-        userinfo_endpoint: discovery.userinfo_endpoint,
-        jwks_uri: discovery.jwks_uri,
-        end_session_endpoint: discovery.end_session_endpoint,
-        revocation_endpoint: discovery.revocation_endpoint,
-        introspection_endpoint: discovery.introspection_endpoint,
-        scopes_supported: discovery.scopes_supported,
-        response_types_supported: discovery.response_types_supported,
-        response_modes_supported: discovery.response_modes_supported,
-        subject_types_supported: discovery.subject_types_supported,
-        id_token_signing_alg_values_supported: discovery.id_token_signing_alg_values_supported,
-        token_endpoint_auth_methods_supported: discovery.token_endpoint_auth_methods_supported,
-        claims_supported: discovery.claims_supported,
-        code_challenge_methods_supported: discovery.code_challenge_methods_supported,
-        grant_types_supported: discovery.grant_types_supported,
-      });
-
-      // Create OIDC client
-      const client = new issuer.Client({
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        response_types: [config.responseType || 'code'],
-        id_token_signed_response_alg: 'RS256',
-      });
-
-      const provider: OIDCProvider = {
-        config,
-        client,
-        discovery,
-      };
-
-      // Cache the provider
-      this.providers.set(cacheKey, provider);
-
-      return provider;
-    } catch (error) {
-      throw new Error(`Failed to create OIDC provider: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    const discovery = await this.discoverProvider(config.issuer);
+    const client = new oidc.Configuration({ ...discovery }, config.clientId, {
+      client_secret: config.clientSecret,
+      id_token_signed_response_alg: 'RS256',
+    }, discovery.token_endpoint_auth_methods_supported?.includes('client_secret_basic')
+      ? oidc.ClientSecretBasic(config.clientSecret)
+      : oidc.ClientSecretPost(config.clientSecret));
+    oidc.enableNonRepudiationChecks(client);
+    const provider = { config, client, discovery };
+    this.providers.set(cacheKey, provider);
+    return provider;
   }
 
-  /**
-   * Gets an existing provider
-   */
   getProvider(name: string, issuer: string): OIDCProvider | null {
-    const cacheKey = `${name}-${issuer}`;
-    return this.providers.get(cacheKey) || null;
+    return this.providers.get(`${name}-${issuer}`) ?? null;
   }
 
-  /**
-   * Generates authorization URL
-   */
-  generateAuthorizationUrl(provider: OIDCProvider, redirectUri: string, state?: string): string {
-    const codeVerifier = generators.codeVerifier();
-    const codeChallenge = generators.codeChallenge(codeVerifier);
-    const nonce = generators.nonce();
-    
-    const params = {
-      client_id: provider.config.clientId,
-      response_type: provider.config.responseType || 'code',
+  // The caller must retain these checks in the user's session until the callback.
+  async generateAuthorizationUrl(
+    provider: OIDCProvider, redirectUri: string, state = oidc.randomState()
+  ): Promise<OIDCAuthorizationRequest> {
+    const codeVerifier = oidc.randomPKCECodeVerifier();
+    const nonce = oidc.randomNonce();
+    const url = oidc.buildAuthorizationUrl(provider.client, {
+      response_type: 'code',
       scope: provider.config.scopes?.join(' ') || 'openid profile email',
       redirect_uri: redirectUri,
-      state: state || generators.state(),
+      state,
       nonce,
-      code_challenge: codeChallenge,
+      code_challenge: await oidc.calculatePKCECodeChallenge(codeVerifier),
       code_challenge_method: 'S256',
       ...(provider.config.prompt && { prompt: provider.config.prompt }),
-      ...(provider.config.maxAge && { max_age: provider.config.maxAge }),
-    };
-
-    return provider.client.authorizationUrl(params);
+      ...(provider.config.maxAge !== undefined && { max_age: String(provider.config.maxAge) }),
+    });
+    return { url: url.href, codeVerifier, state, nonce };
   }
 
-  /**
-   * Exchanges authorization code for tokens
-   */
   async exchangeCodeForTokens(
     provider: OIDCProvider,
-    code: string,
-    redirectUri: string,
-    codeVerifier?: string
+    callbackUrl: URL,
+    checks: Pick<OIDCAuthorizationRequest, 'codeVerifier' | 'state' | 'nonce'>,
   ): Promise<OIDCTokenSet> {
-    try {
-      const params: Record<string, unknown> = {
-        code,
-        redirect_uri: redirectUri,
-      };
-
-      if (codeVerifier) {
-        params.code_verifier = codeVerifier;
-      }
-
-      const tokenSet = await provider.client.callback(redirectUri, params);
-      
-      return {
-        access_token: tokenSet.access_token!,
-        id_token: tokenSet.id_token!,
-        refresh_token: tokenSet.refresh_token,
-        expires_at: tokenSet.expires_at,
-        scope: tokenSet.scope,
-        token_type: tokenSet.token_type,
-      };
-    } catch (error) {
-      throw new Error(`Token exchange failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (!checks.codeVerifier || !checks.state || !checks.nonce) {
+      throw new Error('OIDC callback requires PKCE, state, and nonce checks');
     }
-  }
-
-  /**
-   * Gets user information from token
-   */
-  async getUserInfo(provider: OIDCProvider, accessToken: string): Promise<OIDCUser> {
-    try {
-      const userInfo = await provider.client.userinfo(accessToken);
-      return userInfo as OIDCUser;
-    } catch (error) {
-      throw new Error(`Failed to get user info: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Validates ID token
-   */
-  async validateIdToken(provider: OIDCProvider, idToken: string, nonce?: string): Promise<Record<string, unknown>> {
-    try {
-      const claims = await (provider.client as any).validateIdToken(idToken, nonce); // eslint-disable-line @typescript-eslint/no-explicit-any
-      return claims;
-    } catch (error) {
-      throw new Error(`ID token validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Refreshes access token
-   */
-  async refreshToken(provider: OIDCProvider, refreshToken: string): Promise<OIDCTokenSet> {
-    try {
-      const tokenSet = await provider.client.refresh(refreshToken);
-      
-      return {
-        access_token: tokenSet.access_token!,
-        id_token: tokenSet.id_token!,
-        refresh_token: tokenSet.refresh_token,
-        expires_at: tokenSet.expires_at,
-        scope: tokenSet.scope,
-        token_type: tokenSet.token_type,
-      };
-    } catch (error) {
-      throw new Error(`Token refresh failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Revokes token
-   */
-  async revokeToken(provider: OIDCProvider, token: string, tokenTypeHint?: string): Promise<void> {
-    try {
-      await provider.client.revoke(token, tokenTypeHint);
-    } catch (error) {
-      throw new Error(`Token revocation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * Gets end session URL
-   */
-  getEndSessionUrl(provider: OIDCProvider, idToken: string, postLogoutRedirectUri?: string): string | null {
-    if (!provider.discovery.end_session_endpoint) {
-      return null;
-    }
-
-    const params = new URLSearchParams({
-      id_token_hint: idToken,
+    const tokens = await oidc.authorizationCodeGrant(provider.client, callbackUrl, {
+      pkceCodeVerifier: checks.codeVerifier,
+      expectedState: checks.state,
+      expectedNonce: checks.nonce,
+      idTokenExpected: true,
+      maxAge: provider.config.maxAge,
     });
-
-    if (postLogoutRedirectUri) {
-      params.set('post_logout_redirect_uri', postLogoutRedirectUri);
-    }
-
-    return `${provider.discovery.end_session_endpoint}?${params.toString()}`;
+    return tokenSet(tokens);
   }
 
-  /**
-   * Clears provider cache
-   */
+  async getUserInfo(provider: OIDCProvider, accessToken: string, expectedSubject: string): Promise<OIDCUser> {
+    return await oidc.fetchUserInfo(provider.client, accessToken, expectedSubject) as OIDCUser;
+  }
+
+  async validateIdToken(provider: OIDCProvider, idToken: string, nonce?: string): Promise<Record<string, unknown>> {
+    const { payload } = await jwtVerify(idToken, createRemoteJWKSet(new URL(provider.discovery.jwks_uri)), {
+      issuer: provider.discovery.issuer,
+      audience: provider.config.clientId,
+      algorithms: ['RS256'],
+      requiredClaims: ['iss', 'sub', 'aud', 'exp', 'iat'],
+    });
+    if (payload.nonce !== nonce) throw new Error('ID token nonce mismatch');
+    if (Array.isArray(payload.aud) && payload.aud.length > 1 && payload.azp !== provider.config.clientId) {
+      throw new Error('ID token authorized party mismatch');
+    }
+    return payload;
+  }
+
+  async refreshToken(provider: OIDCProvider, refreshToken: string): Promise<OIDCTokenSet> {
+    return tokenSet(await oidc.refreshTokenGrant(provider.client, refreshToken));
+  }
+
+  async revokeToken(provider: OIDCProvider, token: string, tokenTypeHint?: string): Promise<void> {
+    await oidc.tokenRevocation(provider.client, token, tokenTypeHint ? { token_type_hint: tokenTypeHint } : undefined);
+  }
+
+  getEndSessionUrl(provider: OIDCProvider, idToken: string, postLogoutRedirectUri?: string): string | null {
+    if (!provider.discovery.end_session_endpoint) return null;
+    return oidc.buildEndSessionUrl(provider.client, {
+      id_token_hint: idToken,
+      ...(postLogoutRedirectUri && { post_logout_redirect_uri: postLogoutRedirectUri }),
+    }).href;
+  }
+
   clearCache(): void {
     this.providers.clear();
     this.discoveryCache.clear();
     this.cacheExpiry.clear();
   }
 
-  /**
-   * Gets all cached providers
-   */
   getCachedProviders(): OIDCProvider[] {
     return Array.from(this.providers.values());
   }
 }
 
-// Global instance
 export const oidcProviderManager = new OIDCProviderManager();
