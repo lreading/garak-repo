@@ -16,6 +16,9 @@ dist
 # Environment files
 .env*
 !.env.example
+.aws
+.codex
+.agents
 
 # IDE and editor files
 .vscode

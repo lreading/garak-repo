@@ -74,7 +74,7 @@ export interface OIDCUser {
 
 export interface OIDCTokenSet {
   access_token: string;
-  id_token: string;
+  id_token?: string;
   refresh_token?: string;
   expires_at?: number;
   scope?: string;

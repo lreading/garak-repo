@@ -7,33 +7,20 @@ import { GarakDashboard } from '@/components/GarakDashboard';
 import { GarakReportMetadata } from '@/lib/garak-parser';
 import { apiJson } from '@/lib/api-client';
 
-function DashboardContent() {
+function DashboardReport({ reportFilename }: { reportFilename: string | null }) {
   const [reportData, setReportData] = useState<GarakReportMetadata | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(!!reportFilename);
+  const [error, setError] = useState<string | null>(reportFilename ? null : 'No report specified');
   const router = useRouter();
   useAuth(); // Check authentication status
   
-  const reportFilename = searchParams.get('report');
-
   useEffect(() => {
+    if (!reportFilename) return;
     const abortController = new AbortController();
     
-    // Reset state when report filename changes
-    setLoading(true);
-    setError(null);
-    setReportData(null);
-    
     async function loadReportData() {
-      if (!reportFilename) {
-        setError('No report specified');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const metadata = await apiJson<GarakReportMetadata>(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename)}`, {
+        const metadata = await apiJson<GarakReportMetadata>(`/api/garak-report-metadata?filename=${encodeURIComponent(reportFilename!)}`, {
           signal: abortController.signal
         });
         setReportData(metadata);
@@ -44,7 +31,7 @@ function DashboardContent() {
         }
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) setLoading(false);
       }
     }
 
@@ -88,13 +75,13 @@ function DashboardContent() {
           <div className="space-x-4">
             <button 
               onClick={() => router.push('/')}
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+              className="bg-gray-600 text-white px-4 py-2 rounded-sm hover:bg-gray-700"
             >
               Back to Reports
             </button>
             <button 
               onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-sm hover:bg-blue-700"
             >
               Retry
             </button>
@@ -113,7 +100,7 @@ function DashboardContent() {
           <p className="text-gray-600 mb-4">No Garak report data found.</p>
           <button 
             onClick={() => router.push('/')}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded-sm hover:bg-blue-700"
           >
             Back to Reports
           </button>
@@ -125,6 +112,12 @@ function DashboardContent() {
   return (
     <GarakDashboard reportData={reportData} filename={reportFilename!} />
   );
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const reportFilename = searchParams.get('report');
+  return <DashboardReport key={reportFilename} reportFilename={reportFilename} />;
 }
 
 export default function DashboardPage() {

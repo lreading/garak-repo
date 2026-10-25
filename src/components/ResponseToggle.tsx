@@ -62,7 +62,7 @@ export function ResponseToggle({
   return (
     <div className="flex items-center space-x-2">
       {error && (
-        <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+        <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded-sm">
           {error}
         </span>
       )}

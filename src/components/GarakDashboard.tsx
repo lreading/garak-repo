@@ -186,7 +186,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-xs border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -255,7 +255,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
               
               {/* Logout Button */}
               {isAuthenticated && isOIDCEnabled && (
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <LogoutButton />
                 </div>
               )}
@@ -267,9 +267,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
       {/* Summary Stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -283,9 +283,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -299,9 +299,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -315,9 +315,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -351,7 +351,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
               placeholder="Search test categories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-hidden focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
@@ -360,7 +360,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
         {isReadonly && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
             <div className="flex">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
@@ -403,11 +403,11 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
 
       {/* Category Detail Modal */}
       {selectedCategory && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="fixed inset-0 bg-gray-600/50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-4 mx-auto p-4 border w-11/12 max-w-7xl shadow-lg rounded-md bg-white max-h-[95vh] flex flex-col">
             <div className="flex-1 flex flex-col min-h-0">
               {/* Header Section */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-4">
                     <h3 className="text-lg font-medium text-gray-900">
@@ -479,7 +479,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="text-lg font-bold text-gray-900">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getDefconColor(selectedCategory.defconGrade)}`}>
+                      <span className={`px-2 py-1 rounded-sm text-xs font-medium ${getDefconColor(selectedCategory.defconGrade)}`}>
                         {getDefconLabel(selectedCategory.defconGrade)}
                       </span>
                     </div>
@@ -587,7 +587,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                         }
                       }}
                       disabled={!hasPrevPage || attemptsLoading}
-                      className={`px-3 py-1 rounded text-sm font-medium ${
+                      className={`px-3 py-1 rounded-sm text-sm font-medium ${
                         hasPrevPage && !attemptsLoading
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -607,7 +607,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                         }
                       }}
                       disabled={!hasNextPage || attemptsLoading}
-                      className={`px-3 py-1 rounded text-sm font-medium ${
+                      className={`px-3 py-1 rounded-sm text-sm font-medium ${
                         hasNextPage && !attemptsLoading
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -658,7 +658,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                     
                     <div className="mb-3">
                       <div className="text-sm font-medium text-gray-700 mb-1">Prompt:</div>
-                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded-sm">
                         {attempt.prompt?.turns?.[0]?.content?.text || 'No prompt text available'}
                       </div>
                     </div>
@@ -675,10 +675,10 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                           const maxScore = Array.isArray(scores) && scores.length > 0 ? Math.max(...scores) : 0;
                           const hasVulnerability = maxScore > 0.5;
                           return (
-                            <div key={detector} className="bg-gray-50 rounded p-2">
+                            <div key={detector} className="bg-gray-50 rounded-sm p-2">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs font-medium text-gray-700">{detector}</span>
-                                <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                <span className={`text-xs font-medium px-2 py-1 rounded-sm ${
                                   hasVulnerability ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                                 }`}>
                                   {hasVulnerability ? 'VULNERABLE' : 'SAFE'}
@@ -688,7 +688,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                 {Array.isArray(scores) ? scores.map((score, i) => (
                                   <span
                                     key={`${attempt.uuid}-${detector}-score-${i}`}
-                                    className={`px-2 py-1 rounded text-xs font-medium ${getScoreColor(score)}`}
+                                    className={`px-2 py-1 rounded-sm text-xs font-medium ${getScoreColor(score)}`}
                                     title={`Generation ${i + 1}: ${score !== null && score !== undefined ? score.toFixed(3) : 'N/A'}`}
                                   >
                                     {score !== null && score !== undefined ? score.toFixed(3) : 'N/A'}
@@ -721,7 +721,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                               {responses.map((response, index) => (
                                 <div
                                   key={`${attempt.uuid}-response-${index}`}
-                                  className={`p-2 rounded text-sm ${
+                                  className={`p-2 rounded-sm text-sm ${
                                     response.isVulnerable
                                       ? 'bg-red-50 border border-red-200'
                                       : 'bg-gray-50 border border-gray-200'
@@ -733,7 +733,7 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                     </span>
                                     <div className="flex items-center space-x-2">
                                       {response.isVulnerable && (
-                                        <span className="text-xs font-medium text-red-800 bg-red-100 px-2 py-1 rounded">
+                                        <span className="text-xs font-medium text-red-800 bg-red-100 px-2 py-1 rounded-sm">
                                           VULNERABLE
                                         </span>
                                       )}
@@ -752,9 +752,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                       {Object.keys(response.detectorScores).length > 0 ? (
                                         // Show existing detector scores
                                         Object.entries(response.detectorScores).map(([detectorName, score]) => (
-                                          <div key={detectorName} className="flex items-center space-x-2 bg-white p-2 rounded border">
+                                          <div key={detectorName} className="flex items-center space-x-2 bg-white p-2 rounded-sm border">
                                             <span className="text-xs text-gray-600">{detectorName}:</span>
-                                            <span className={`text-xs font-medium px-2 py-1 rounded ${getScoreColor(score)}`}>
+                                            <span className={`text-xs font-medium px-2 py-1 rounded-sm ${getScoreColor(score)}`}>
                                               {score !== null && score !== undefined ? score.toFixed(3) : 'N/A'}
                                             </span>
                                             {!isReadonly && (
@@ -771,9 +771,9 @@ export function GarakDashboard({ reportData, filename }: GarakDashboardProps) {
                                         ))
                                       ) : (
                                         // Show custom toggle when no detectors exist
-                                        <div className="flex items-center space-x-2 bg-white p-2 rounded border">
+                                        <div className="flex items-center space-x-2 bg-white p-2 rounded-sm border">
                                           <span className="text-xs text-gray-600">custom.falsePositive:</span>
-                                          <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-800">
+                                          <span className="text-xs font-medium px-2 py-1 rounded-sm bg-green-100 text-green-800">
                                             0.000
                                           </span>
                                           {!isReadonly && (

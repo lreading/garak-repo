@@ -266,7 +266,7 @@ async function refreshAccessToken(token: OIDCJWT): Promise<OIDCJWT> {
     return {
       ...token,
       accessToken: refreshedTokens.access_token,
-      idToken: refreshedTokens.id_token,
+      idToken: refreshedTokens.id_token ?? token.idToken,
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
       expiresAt: refreshedTokens.expires_at ? refreshedTokens.expires_at * 1000 : Date.now() + 3600000,
     };

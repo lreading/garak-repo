@@ -198,7 +198,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
             value={selectedFolder}
             onChange={(e) => setSelectedFolder(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
             disabled={uploadProgress.uploading}
           >
             <option value="" className="text-gray-900 bg-white">Root Directory</option>
@@ -215,7 +215,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
               setShowNewFolderInput(!showNewFolderInput);
             }}
             disabled={uploadProgress.uploading}
-            className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             New Folder
           </button>
@@ -232,14 +232,14 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="Folder name"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               disabled={uploadProgress.uploading}
               onClick={(e) => e.stopPropagation()}
             />
             <button
               type="submit"
               disabled={uploadProgress.uploading || !newFolderName.trim()}
-              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={(e) => e.stopPropagation()}
             >
               Create
@@ -252,7 +252,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
                 setNewFolderName('');
               }}
               disabled={uploadProgress.uploading}
-              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
@@ -350,14 +350,14 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
             <div className="flex space-x-2">
               <button
                 onClick={() => setSelectedFile(null)}
-                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpload}
                 disabled={uploadProgress.uploading}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Upload Report
               </button>
@@ -370,7 +370,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
       {error && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
@@ -393,7 +393,7 @@ export function FileUpload({ onUploadSuccess, onUploadError }: FileUploadProps) 
       {uploadProgress.progress === 100 && !error && (
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
           <div className="flex">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"

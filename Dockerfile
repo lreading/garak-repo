@@ -1,8 +1,9 @@
 #=========== Base Image ============
-FROM node:22-alpine AS base
+# Node.js security release: 2026-10-21. Pin the multi-platform image digest.
+FROM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS base
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache gcompat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -15,6 +16,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 RUN npm run build
+
+FROM deps AS production-deps
+RUN npm ci --omit=dev --ignore-scripts --offline --no-audit --no-fund
 
 #=========== Final Image ============
 FROM base AS runner
@@ -31,7 +35,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=production-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Copy API route source files for swagger-jsdoc to read at runtime
 COPY --from=builder --chown=nextjs:nodejs /app/src/app/api ./src/app/api

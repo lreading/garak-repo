@@ -112,7 +112,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   }, [updateReportsState]);
 
   // Recursively count all .jsonl files (not directories) in the reports tree
-  const countAllReports = useCallback((items: Report[], searchTerm: string = ''): number => {
+  const countAllReports = useCallback(function countAllReports(items: Report[], searchTerm: string = ''): number {
     let count = 0;
     
     for (const item of items) {
@@ -140,7 +140,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   }, []);
 
   // Sort items hierarchically (sort at each level, preserving parent-child relationships)
-  const sortReportsHierarchically = useCallback((items: Report[]): Report[] => {
+  const sortReportsHierarchically = useCallback(function sortReportsHierarchically(items: Report[]): Report[] {
     return items.map(item => {
       if (item.isDirectory && item.children) {
         return {
@@ -205,7 +205,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   }, [sortField, sortDirection]);
 
   // Flatten hierarchical structure for display
-  const flattenReports = useCallback((items: Report[], level: number = 0, parentExpanded: boolean = true): Array<Report & { level: number; isVisible: boolean }> => {
+  const flattenReports = useCallback(function flattenReports(items: Report[], level: number = 0, parentExpanded: boolean = true): Array<Report & { level: number; isVisible: boolean }> {
     const result: Array<Report & { level: number; isVisible: boolean }> = [];
     
     for (const item of items) {
@@ -335,7 +335,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded-sm hover:bg-blue-700"
           >
             Retry
           </button>
@@ -348,7 +348,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-white shadow-xs border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div>
@@ -368,7 +368,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                 {!isReadonly && (
                   <button
                     onClick={() => setShowUploadModal(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                   >
                     Upload Report
                   </button>
@@ -399,7 +399,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
             {!isReadonly && (
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg"
+                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-lg"
               >
                 Upload Your First Report
               </button>
@@ -421,7 +421,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-xs border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
@@ -443,7 +443,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
               {!isReadonly && (
                 <button
                   onClick={() => setShowUploadModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                 >
                   Upload Report
                 </button>
@@ -471,13 +471,13 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
               placeholder="Search reports by filename or run ID..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 placeholder-gray-500 focus:outline-hidden focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
 
         {/* Reports Table */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="bg-white shadow-sm overflow-hidden sm:rounded-md">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -573,7 +573,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center" style={{ paddingLeft: `${report.level * 20}px` }}>
-                        <div className="flex-shrink-0 h-8 w-8">
+                        <div className="shrink-0 h-8 w-8">
                           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
                             report.isDirectory 
                               ? 'bg-yellow-100' 
@@ -687,7 +687,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-md shadow">
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-md shadow-sm">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -713,7 +713,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
                 </p>
               </div>
               <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
@@ -783,7 +783,7 @@ export function ReportSelector({ onReportSelect }: ReportSelectorProps) {
             {searchTerm && (
               <button
                 onClick={() => handleSearch('')}
-                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-sm hover:bg-blue-700"
               >
                 Clear Search
               </button>

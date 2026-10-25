@@ -13,7 +13,7 @@ export function CategoryCard({ category, onClick }: CategoryCardProps) {
 
   return (
     <div 
-      className="bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer border border-gray-200"
+      className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200"
       onClick={onClick}
     >
       <div className="p-6">
@@ -60,7 +60,7 @@ export function CategoryCard({ category, onClick }: CategoryCardProps) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-medium text-gray-700">Avg Score</span>
-              <span className={`text-sm font-medium px-2 py-1 rounded ${getScoreColor(category.averageScore)}`}>
+              <span className={`text-sm font-medium px-2 py-1 rounded-sm ${getScoreColor(category.averageScore)}`}>
                 {category.averageScore.toFixed(3)}
               </span>
             </div>

@@ -22,8 +22,8 @@ export function UserProfile({ className = '', showLogout = true }: UserProfilePr
   if (status === 'loading') {
     return (
       <div className={`animate-pulse ${className}`}>
-        <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-        <div className="h-3 bg-gray-200 rounded w-24"></div>
+        <div className="h-4 bg-gray-200 rounded-sm w-32 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded-sm w-24"></div>
       </div>
     );
   }

@@ -6,6 +6,8 @@
 
 'use client';
 
+import Link from 'next/link';
+
 import { LoginButton } from '@/components/LoginButton';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -72,18 +74,17 @@ function AuthErrorContent() {
         
         <div className="mt-8 space-y-6">
           <div className="text-center">
-            <LoginButton className="w-full justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <LoginButton className="w-full justify-center py-3 px-4 border border-transparent rounded-md shadow-xs text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
               Try Again
             </LoginButton>
           </div>
           
           <div className="text-center">
-            <a
-              href="/"
+            <Link               href="/"
               className="text-sm text-blue-600 hover:text-blue-500"
             >
               Return to Home
-            </a>
+            </Link>
           </div>
           
           {error && (
